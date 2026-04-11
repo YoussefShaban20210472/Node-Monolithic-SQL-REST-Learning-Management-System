@@ -28,7 +28,7 @@ function generateRandomString(length) {
 }
 
 const adminUser = {
-  email: "admin@example.com",
+  email: "admin0@example.com",
   password: "0Admin@example.com",
 };
 
