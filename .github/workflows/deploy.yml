@@ -12,7 +12,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-
+    environment: Test-Node-Monolithic-SQL-REST-Learning-Management-System
     env:
       PORT: 3000
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
