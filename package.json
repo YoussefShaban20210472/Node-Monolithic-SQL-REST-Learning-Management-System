@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "NODE_ENV=production jest",
+    "test": "jest",
     "pro-test": "set NODE_ENV=production&& jest",
     "dev": "node index.js",
     "start": "set NODE_ENV=production&node index.js",
