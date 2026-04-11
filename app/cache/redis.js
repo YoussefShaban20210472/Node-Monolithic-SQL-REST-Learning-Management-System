@@ -1,14 +1,14 @@
 const { createClient } = require("redis");
 const config = require("../../config");
 
-const redisConfig = {
-  development: { url: process.env.REDIS_URL },
-  production: {
-    url: process.env.REDIS_URL,
-  },
-  test: { url: process.env.TEST_REDIS_URL },
-};
-const env = process.env.NODE_ENV || "development";
+// const redisConfig = {
+//   development: { url: process.env.REDIS_URL },
+//   production: {
+//     url: process.env.REDIS_URL,
+//   },
+//   test: { url: process.env.TEST_REDIS_URL },
+// };
+// const env = process.env.NODE_ENV || "development";
 
 class RedisClient {
   constructor() {
@@ -18,7 +18,10 @@ class RedisClient {
   async connect() {
     if (this.isConnected) return;
     try {
-      this.client = createClient(redisConfig[env]);
+      // this.client = createClient(redisConfig[env]);
+      this.client = createClient({
+        url: process.env.REDIS_URL,
+      });
 
       await this.client.connect();
       this.isConnected = true;
