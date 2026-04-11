@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "set NODE_ENV=test&& jest",
+    "pro-test": "set NODE_ENV=production&& jest",
     "dev": "node index.js",
     "start": "set NODE_ENV=production&node index.js",
     "play": "set NODE_ENV=test&& node index.js"
