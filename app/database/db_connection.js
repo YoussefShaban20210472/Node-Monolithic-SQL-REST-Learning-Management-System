@@ -28,6 +28,10 @@ const { Pool } = require("pg");
 // const env = process.env.NODE_ENV || "development";
 
 // const db = new Pool(config[env]);
+
+console.log(
+  `--------------------------------------------------------${process.env.DATABASE_URL}----------------------------------------------------`,
+);
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
