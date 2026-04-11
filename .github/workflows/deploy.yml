@@ -29,5 +29,8 @@ jobs:
           cache: "npm"
 
       - run: npm install
-
+      - name: Debug ENV
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          echo "DATABASE_URL=$DATABASE_URL"
       - run: npm test
