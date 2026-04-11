@@ -2,8 +2,8 @@ const app = require("../../app");
 const request = require("supertest");
 
 const adminUser = {
-  email: "john@examplez.com",
-  password: "Password@123",
+  email: "admin@example.com",
+  password: "0Admin@example.com",
 };
 
 describe("Testing Post /user/login", () => {
