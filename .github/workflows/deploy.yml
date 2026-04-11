@@ -18,6 +18,7 @@ jobs:
       JWT_SECRET: ${{ secrets.JWT_SECRET }}
       DATABASE_URL: ${{ secrets.TEST_DATABASE_URL }}
       REDIS_URL: ${{ secrets.TEST_REDIS_URL }}
+      NODE_ENV: production
 
     steps:
       - uses: actions/checkout@v4
