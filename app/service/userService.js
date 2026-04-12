@@ -1,7 +1,7 @@
 const createUserSchema = require("../validator/userValidator");
 const bcrypt = require("bcrypt");
 const userModel = require("../model/userModel");
-
+const redis = require("../cache/redis");
 async function createUser(user) {
   // Validate user
 
