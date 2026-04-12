@@ -2,17 +2,47 @@ const app = require("../../app");
 const request = require("supertest");
 
 const adminUser = {
-  email: "admin@example.com",
-  password: "0Admin@example.com",
+  email: "admin2@example.com",
+  password: "Password@123",
 };
 
+const studentUser = {
+  email: "student2@example.com",
+  password: "Password@123",
+};
+
+const instructorUser = {
+  email: "instructor2@example.com",
+  password: "Password@123",
+};
 describe("Testing Post /user/login", () => {
   describe("Positive Testing", () => {
-    it("Should login successfully", async () => {
-      let response = await request(app).post("/user/login").send(adminUser);
+    const scenarios = [
+      {
+        name: "admin user",
+        user: adminUser,
+      },
+      {
+        name: "student user",
+        user: studentUser,
+      },
+      {
+        name: "instructor user",
+        user: instructorUser,
+      },
+    ];
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("token");
+    scenarios.forEach((scenario) => {
+      it(`should login successfully as ${scenario.name}`, async () => {
+        const response = await request(app)
+          .post("/user/login")
+          .send(scenario.user);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty("token");
+        expect(typeof response.body.token).toBe("string");
+        expect(response.body.token.length).toBeGreaterThan(0);
+      });
     });
   });
   describe("Negative Testing", () => {

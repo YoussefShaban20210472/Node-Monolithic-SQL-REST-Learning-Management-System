@@ -18,4 +18,8 @@ async function createUser(user) {
   return createdUser;
 }
 
-module.exports = { createUser };
+async function getAllUsers() {
+  const users = await userModel.getAllUsers();
+  return users;
+}
+module.exports = { createUser, getAllUsers };

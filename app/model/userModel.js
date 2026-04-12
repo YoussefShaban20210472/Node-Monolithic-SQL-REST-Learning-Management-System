@@ -54,4 +54,20 @@ async function findUserByEmail(email) {
   }
 }
 
-module.exports = { createUser, findUserByEmail };
+async function getAllUsers() {
+  const client = await db.connect();
+  try {
+    const query = `
+      SELECT id,first_name,last_name,email,phone_number,role,address,created_at,updated_at FROM Users;
+    `;
+
+    const result = await client.query(query);
+
+    return result.rows;
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+module.exports = { createUser, findUserByEmail, getAllUsers };
