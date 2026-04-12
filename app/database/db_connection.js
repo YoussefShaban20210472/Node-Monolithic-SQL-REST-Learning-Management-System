@@ -29,10 +29,6 @@ const { Pool } = require("pg");
 
 // const db = new Pool(config[env]);
 
-console.log(process.env.DATABASE_URL);
-console.log(
-  `---------------------------------${process.env.DATABASE_URL}----------------------------------------------------`,
-);
 const db = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
