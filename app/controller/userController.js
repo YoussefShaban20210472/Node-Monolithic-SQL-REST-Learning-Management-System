@@ -17,4 +17,11 @@ async function findUserById(req, res) {
   res.status(200).json({ user });
 }
 
-module.exports = { createUser, getAllUsers, findUserById };
+async function deleteUserById(req, res) {
+  const id = req.params.id || req.user.id;
+  console.log(req.params.id);
+  const _ = await userService.deleteUserById(id);
+  res.status(200).json({ message: "User deleted successfully" });
+}
+
+module.exports = { createUser, getAllUsers, findUserById, deleteUserById };

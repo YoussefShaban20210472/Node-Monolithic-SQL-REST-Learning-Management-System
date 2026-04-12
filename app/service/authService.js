@@ -11,7 +11,9 @@ async function authenticateUser(token) {
     const decoded = verfiyToken(token);
 
     //  Check blacklist
-    const isBlacklisted = await redis.get(`blacklist_${token}`);
+    const isBlacklisted =
+      (await redis.get(`blacklist_${token}`)) ||
+      (await redis.get(`blacklist_${decoded.id}`));
 
     if (isBlacklisted) {
       throw "BLACKLIST";

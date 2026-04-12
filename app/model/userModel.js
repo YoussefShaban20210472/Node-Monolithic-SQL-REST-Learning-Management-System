@@ -88,4 +88,27 @@ async function findUserById(id) {
     client.release();
   }
 }
-module.exports = { createUser, findUserByEmail, getAllUsers, findUserById };
+async function deleteUserById(id) {
+  const client = await db.connect();
+  try {
+    const query = `
+      delete from users where id = $1 RETURNING *;
+    `;
+
+    const values = [id];
+
+    const result = await client.query(query, values);
+    return result.rows[0] || null;
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+module.exports = {
+  createUser,
+  findUserByEmail,
+  getAllUsers,
+  findUserById,
+  deleteUserById,
+};

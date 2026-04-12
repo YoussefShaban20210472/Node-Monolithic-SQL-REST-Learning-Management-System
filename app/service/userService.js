@@ -30,4 +30,12 @@ async function findUserById(id) {
   }
   return user;
 }
-module.exports = { createUser, getAllUsers, findUserById };
+async function deleteUserById(id) {
+  const user = await userModel.deleteUserById(id);
+  if (user == null) {
+    throw { status: 404, message: "Accout Not Found" };
+  }
+  await redis.set(`blacklist_${id}`);
+  return user;
+}
+module.exports = { createUser, getAllUsers, findUserById, deleteUserById };

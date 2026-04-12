@@ -1,7 +1,7 @@
 const app = require("../../app");
 const request = require("supertest");
 
-function createUser() {
+function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
   ).join("");
@@ -13,7 +13,7 @@ function createUser() {
     password: "Password@123",
     phone_number: numbersString,
     address: "253 N. Cherry St.",
-    role: "student",
+    role: role,
   };
   return user;
 }
@@ -544,6 +544,202 @@ describe("Testing Get /user/:id", () => {
           });
         }
       });
+    });
+  });
+});
+
+describe("Testing Delete /user/:id", () => {
+  let adminToken, studentToken, instructorToken;
+  let userIdToDelete;
+
+  beforeAll(async () => {
+    // login users
+    const adminRes = await request(app).post("/user/login").send(adminUser);
+    adminToken = adminRes.body.token;
+
+    const studentRes = await request(app).post("/user/login").send(studentUser);
+    studentToken = studentRes.body.token;
+
+    const instructorRes = await request(app)
+      .post("/user/login")
+      .send(instructorUser);
+    instructorToken = instructorRes.body.token;
+
+    // create a user to delete
+    const newUser = createUser();
+    const createRes = await request(app)
+      .post("/user")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send(newUser);
+
+    userIdToDelete = createRes.body.user.id;
+  });
+
+  // ✅ Positive
+  describe("Positive Testing", () => {
+    it("should allow admin to delete user by id", async () => {
+      const res = await request(app)
+        .delete(`/user/${userIdToDelete}`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("message");
+    });
+  });
+  describe("Negative Testing", () => {
+    // ❌ Authorization scenarios
+    const authScenarios = [
+      { name: "missing", setHeader: (req) => req },
+      { name: "empty", setHeader: (req) => req.set("Authorization", "") },
+      {
+        name: "invalid",
+        values: ["Bearer invalid", "invalid", "Bearer ", "123"],
+      },
+      {
+        name: "student token",
+        setHeader: (req) => req.set("Authorization", `Bearer ${studentToken}`),
+      },
+      {
+        name: "instructor token",
+        setHeader: (req) =>
+          req.set("Authorization", `Bearer ${instructorToken}`),
+      },
+    ];
+
+    authScenarios.forEach((scenario) => {
+      if (scenario.name === "invalid") {
+        scenario.values.forEach((value) => {
+          it(`should return 401 for invalid auth (${value})`, async () => {
+            const res = await request(app)
+              .delete(`/user/${userIdToDelete}`)
+              .set("Authorization", value);
+
+            expect(res.status).toBe(401);
+          });
+        });
+      } else {
+        it(`should return 401 if auth is ${scenario.name}`, async () => {
+          let req = request(app).delete(`/user/${userIdToDelete}`);
+          req = scenario.setHeader(req);
+
+          const res = await req;
+
+          expect(res.status).toBe(401);
+        });
+      }
+    });
+
+    // ❌ Edge cases
+    it("should return 404 if user does not exist", async () => {
+      const res = await request(app)
+        .delete(`/user/999999`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(404);
+    });
+
+    it("should return 400 for invalid id format", async () => {
+      const res = await request(app)
+        .delete(`/user/invalid-id`)
+        .set("Authorization", `Bearer ${adminToken}`);
+
+      expect(res.status).toBe(400);
+    });
+  });
+});
+
+describe("DELETE /user/me", () => {
+  // helper to create + login user dynamically
+  const createAndLoginUser = async (userData) => {
+    let response = await request(app).post("/user/login").send(adminUser);
+    const token = response.body.token;
+    // create user
+    await request(app)
+      .post("/user")
+      .set("Authorization", `Bearer ${token}`)
+      .send(userData);
+
+    // login user
+    const loginRes = await request(app).post("/user/login").send({
+      email: userData.email,
+      password: userData.password,
+    });
+
+    return loginRes.body.token;
+  };
+
+  // ✅ Positive (each test gets fresh user)
+  describe("Positive Testing", () => {
+    const successScenarios = [
+      { name: "admin", user: () => createUser("admin") },
+      { name: "student", user: () => createUser("student") },
+      { name: "instructor", user: () => createUser("instructor") },
+    ];
+
+    successScenarios.forEach((scenario) => {
+      it(`should allow ${scenario.name} to delete their own account`, async () => {
+        const user = scenario.user();
+        const token = await createAndLoginUser(user);
+
+        const res = await request(app)
+          .delete("/user/me")
+          .set("Authorization", `Bearer ${token}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body).toHaveProperty("message");
+      });
+    });
+  });
+  // ❌ Authorization scenarios
+  describe("Negative Testing", () => {
+    const authScenarios = [
+      { name: "missing", setHeader: (req) => req },
+      { name: "empty", setHeader: (req) => req.set("Authorization", "") },
+      {
+        name: "invalid",
+        values: ["Bearer invalid", "invalid", "Bearer ", "123"],
+      },
+    ];
+
+    authScenarios.forEach((scenario) => {
+      if (scenario.name === "invalid") {
+        scenario.values.forEach((value) => {
+          it(`should return 401 if token is invalid (${value})`, async () => {
+            const res = await request(app)
+              .delete("/user/me")
+              .set("Authorization", value);
+
+            expect(res.status).toBe(401);
+          });
+        });
+      } else {
+        it(`should return 401 if auth is ${scenario.name}`, async () => {
+          let req = request(app).delete("/user/me");
+          req = scenario.setHeader(req);
+
+          const res = await req;
+
+          expect(res.status).toBe(401);
+        });
+      }
+    });
+
+    // 🔥 Security: token should not work after deletion
+    it("should not allow reuse of token after self deletion", async () => {
+      const user = createUser("student");
+      const token = await createAndLoginUser(user);
+
+      const res = await request(app)
+        .delete("/user/me")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+
+      const retry = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(retry.status).toBe(401);
     });
   });
 });
