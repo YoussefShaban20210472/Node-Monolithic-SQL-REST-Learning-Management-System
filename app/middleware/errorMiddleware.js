@@ -1,7 +1,7 @@
 const handleAppError = require("../error/appError");
 function errorAppHandler(error, req, res, next) {
   const result = handleAppError(error);
-  if (result.status == 500) console.log(result);
+  if (result.status == 500) console.log(error);
   res.status(result.status).json({ errors: result.errors });
 }
 
