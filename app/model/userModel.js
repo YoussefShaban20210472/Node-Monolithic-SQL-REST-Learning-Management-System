@@ -70,4 +70,22 @@ async function getAllUsers() {
     client.release();
   }
 }
-module.exports = { createUser, findUserByEmail, getAllUsers };
+async function findUserById(id) {
+  const client = await db.connect();
+  try {
+    const query = `
+      SELECT id,first_name,last_name,email,phone_number,role,address,created_at,updated_at FROM Users WHERE id = $1 LIMIT 1;
+    `;
+
+    const values = [id];
+
+    const result = await client.query(query, values);
+
+    return result.rows[0] || null;
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+module.exports = { createUser, findUserByEmail, getAllUsers, findUserById };

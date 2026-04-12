@@ -155,7 +155,7 @@ describe("Testing Post /user", () => {
       });
     });
 
-    describe("Authorization validation (Missing, Empty, Invalid)", () => {
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
       const scenarios = [
         {
           name: "missing",
@@ -332,6 +332,215 @@ describe("Testing Get /user/all", () => {
 
             expect(response.status).toBe(401);
             expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
+  });
+});
+
+describe("Testing Get /user/me", () => {
+  describe("Positive Testing", () => {
+    let adminToken;
+    let studentToken;
+    let instructorToken;
+
+    beforeAll(async () => {
+      const adminRes = await request(app).post("/user/login").send(adminUser);
+      adminToken = adminRes.body.token;
+
+      const studentRes = await request(app)
+        .post("/user/login")
+        .send(studentUser);
+      studentToken = studentRes.body.token;
+
+      const instructorRes = await request(app)
+        .post("/user/login")
+        .send(instructorUser);
+      instructorToken = instructorRes.body.token;
+    });
+
+    const scenarios = [
+      {
+        name: "admin user",
+        token: () => adminToken,
+        user: adminUser,
+      },
+      {
+        name: "student user",
+        token: () => studentToken,
+        user: studentUser,
+      },
+      {
+        name: "instructor user",
+        token: () => instructorToken,
+        user: instructorUser,
+      },
+    ];
+
+    scenarios.forEach((scenario) => {
+      it(`should get user info successfully for ${scenario.name}`, async () => {
+        const response = await request(app)
+          .get("/user/me")
+          .set("Authorization", `Bearer ${scenario.token()}`);
+        const user = response.body.user;
+
+        expect(response.status).toBe(200);
+        expect(scenario.user.email).toBe(user.email);
+
+        expect(user).toHaveProperty("first_name");
+        expect(user).toHaveProperty("last_name");
+        expect(user).toHaveProperty("email");
+        expect(user).toHaveProperty("phone_number");
+        expect(user).toHaveProperty("address");
+        expect(user).toHaveProperty("role");
+        expect(user).toHaveProperty("id");
+        expect(user.password).toBeUndefined();
+      });
+    });
+  });
+  describe("Negative Testing", () => {
+    describe("Authorization validation (Missing, Empty, Invalid)", () => {
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+      ];
+
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is invalid (${value})`, async () => {
+              const response = await request(app)
+                .get("/user/me")
+                .set("Authorization", value);
+
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else {
+          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
+            let req = request(app).get("/user/me");
+            req = scenario.setHeader(req);
+
+            const response = await req;
+
+            expect(response.status).toBe(401);
+            expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
+  });
+});
+
+describe("Testing Get /user/:id", () => {
+  describe("Positive Testing", () => {
+    it("Should get user info of given id only if the caller was an admin and the given id is there", async () => {
+      let response = await request(app).post("/user/login").send(adminUser);
+      const token = response.body.token;
+      const id = "1";
+      response = await request(app)
+        .get(`/user/${id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      const user = response.body.user;
+      expect(response.status).toBe(200);
+      expect(`${user.id}`).toBe(id);
+      expect(user).toHaveProperty("first_name");
+      expect(user).toHaveProperty("last_name");
+      expect(user).toHaveProperty("email");
+      expect(user).toHaveProperty("phone_number");
+      expect(user).toHaveProperty("address");
+      expect(user).toHaveProperty("role");
+      expect(user).toHaveProperty("id");
+      expect(user.password).toBeUndefined();
+    });
+  });
+  describe("Negative Testing", () => {
+    it("Should return 404 if the given id is not found only if the caller was an admin and the given id is there", async () => {
+      let response = await request(app).post("/user/login").send(adminUser);
+      const token = response.body.token;
+      const id = "6000";
+      response = await request(app)
+        .get(`/user/${id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      expect(response.status).toBe(404);
+      expect(response.body.errors[0]).toHaveProperty("message");
+    });
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+        {
+          name: "Unauthorized",
+          values: [
+            { name: "student user", user: studentUser },
+            { name: "instructor user", user: instructorUser },
+          ],
+        },
+      ];
+      const ids = ["1", "2", "3", "5", "10", "15", "20", "50", "100", "125"];
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            ids.forEach((id) => {
+              it(`should return 401 if Authorization is invalid (${value}) and id is (${id})`, async () => {
+                const response = await request(app)
+                  .get(`/user/${id}`)
+                  .set("Authorization", value)
+                  .send();
+
+                expect(response.status).toBe(401);
+                expect(response.body.errors[0]).toHaveProperty("message");
+              });
+            });
+          });
+        } else if (scenario.name === "Unauthorized") {
+          scenario.values.forEach((value) => {
+            ids.forEach((id) => {
+              it(`should return 401 if Authorization is unauthorized as (${value}) and id is (${id})`, async () => {
+                const response = await request(app)
+                  .get(`/user/${id}`)
+                  .set("Authorization", value)
+                  .send();
+
+                expect(response.status).toBe(401);
+                expect(response.body.errors[0]).toHaveProperty("message");
+              });
+            });
+          });
+        } else {
+          ids.forEach((id) => {
+            it(`should return 401 if Authorization is ${scenario.name} and id is (${id})`, async () => {
+              let response = request(app).get(`/user/${id}`).send();
+              response = scenario.setHeader(response);
+              response = await response;
+
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
           });
         }
       });

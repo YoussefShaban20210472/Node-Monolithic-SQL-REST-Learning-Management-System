@@ -22,4 +22,12 @@ async function getAllUsers() {
   const users = await userModel.getAllUsers();
   return users;
 }
-module.exports = { createUser, getAllUsers };
+
+async function findUserById(id) {
+  const user = await userModel.findUserById(id);
+  if (user == null) {
+    throw { status: 404, message: "Accout Not Found" };
+  }
+  return user;
+}
+module.exports = { createUser, getAllUsers, findUserById };

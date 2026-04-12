@@ -102,14 +102,49 @@ describe("Testing Post /user/login", () => {
 
 describe("Testing Post /user/logout", () => {
   describe("Positive Testing", () => {
-    it("Should logout successfully", async () => {
-      let response = await request(app).post("/user/login").send(adminUser);
-      const token = response.body.token;
-      response = await request(app)
-        .post("/user/logout")
-        .set("Authorization", `Bearer ${token}`);
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty("message");
+    let adminToken;
+    let studentToken;
+    let instructorToken;
+
+    beforeAll(async () => {
+      const adminRes = await request(app).post("/user/login").send(adminUser);
+      adminToken = adminRes.body.token;
+
+      const studentRes = await request(app)
+        .post("/user/login")
+        .send(studentUser);
+      studentToken = studentRes.body.token;
+
+      const instructorRes = await request(app)
+        .post("/user/login")
+        .send(instructorUser);
+      instructorToken = instructorRes.body.token;
+    });
+
+    const scenarios = [
+      {
+        name: "admin user",
+        token: () => adminToken,
+      },
+      {
+        name: "student user",
+        token: () => studentToken,
+      },
+      {
+        name: "instructor user",
+        token: () => instructorToken,
+      },
+    ];
+
+    scenarios.forEach((scenario) => {
+      it(`should logout successfully for ${scenario.name}`, async () => {
+        const response = await request(app)
+          .post("/user/logout")
+          .set("Authorization", `Bearer ${scenario.token()}`);
+
+        expect(response.status).toBe(200);
+        expect(response.body).toHaveProperty("message");
+      });
     });
   });
   describe("Negative Testing", () => {
