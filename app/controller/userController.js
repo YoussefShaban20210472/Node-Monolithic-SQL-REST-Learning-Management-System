@@ -23,4 +23,15 @@ async function deleteUserById(req, res) {
   res.status(200).json({ message: "User deleted successfully" });
 }
 
-module.exports = { createUser, getAllUsers, findUserById, deleteUserById };
+async function updateUserById(req, res) {
+  const id = req.params.id || req.user.id;
+  const _ = await userService.updateUserById(id, req.body);
+  res.status(200).json({ message: "User updated successfully" });
+}
+module.exports = {
+  createUser,
+  getAllUsers,
+  findUserById,
+  deleteUserById,
+  updateUserById,
+};

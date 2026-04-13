@@ -1,4 +1,7 @@
-const createUserSchema = require("../validator/userValidator");
+const {
+  createUserSchema,
+  createUserUpdateSchema,
+} = require("../validator/userValidator");
 const bcrypt = require("bcrypt");
 const userModel = require("../model/userModel");
 const redis = require("../cache/redis");
@@ -30,12 +33,62 @@ async function findUserById(id) {
   }
   return user;
 }
+
 async function deleteUserById(id) {
   const user = await userModel.deleteUserById(id);
   if (user == null) {
     throw { status: 404, message: "Accout Not Found" };
   }
-  await redis.set(`blacklist_${id}`);
+  const userTokenVersion = (await redis.get(`user_${id}_tokenVersion`)) || "0";
+  await redis.set(
+    `user_${user.id}_tokenVersion`,
+    `${Number(userTokenVersion) + 1}`,
+  );
   return user;
 }
-module.exports = { createUser, getAllUsers, findUserById, deleteUserById };
+async function updateUserById(id, user) {
+  // Validate user
+  // Schema Validation
+  const validatedUser = createUserUpdateSchema.parse(user);
+  let safeUser = {};
+  const safeFeils = [
+    "first_name",
+    "last_name",
+    "email",
+    "phone_number",
+    "address",
+  ];
+  safeFeils.forEach((safeFiled) => {
+    if (validatedUser[safeFiled] != null) {
+      safeUser[safeFiled] = validatedUser[safeFiled];
+    }
+  });
+  if (Object.keys(safeUser).length === 0) {
+    throw {
+      status: 400,
+      message:
+        "You have to provide at least one allowed field to update the profile",
+    };
+  }
+  const updatedUser = await userModel.updateUserById(id, safeUser);
+  if (updatedUser == null) {
+    throw { status: 404, message: "Accout Not Found" };
+  }
+  if (validatedUser["email"] != null) {
+    const userTokenVersion =
+      (await redis.get(`user_${id}_tokenVersion`)) || "0";
+
+    await redis.set(
+      `user_${id}_tokenVersion`,
+      `${Number(userTokenVersion) + 1}`,
+    );
+  }
+  return updatedUser;
+}
+module.exports = {
+  createUser,
+  getAllUsers,
+  findUserById,
+  deleteUserById,
+  updateUserById,
+};

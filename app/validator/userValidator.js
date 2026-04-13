@@ -90,4 +90,76 @@ const createUserSchema = z.object({
   }),
 });
 
-module.exports = createUserSchema;
+const createUserUpdateSchema = z.object({
+  first_name: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? "first_name is required"
+          : "first_name must be string",
+    })
+    .regex(/^[A-Za-z]{3,20}$/, {
+      error: (issue) =>
+        issue.input.length < 3
+          ? "first_name must be at least 3 letters"
+          : issue.input.length > 20
+            ? "first_name must be at maximum 20 letters"
+            : "first_name must be only letters",
+    })
+    .optional(),
+  last_name: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? "last_name is required"
+          : "last_name must be string",
+    })
+    .regex(/^[A-Za-z]{3,20}$/, {
+      error: (issue) =>
+        issue.input.length < 3
+          ? "last_name must be at least 3 letters"
+          : issue.input.length > 20
+            ? "last_name must be at maximum 20 letters"
+            : "last_name must be only letters",
+    })
+    .optional(),
+  email: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? "email is required"
+          : "email must be string",
+    })
+    .email("Invalid email")
+    .optional(),
+
+  phone_number: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? "phone_number is required"
+          : "phone_number must be string",
+    })
+    .regex(/^[0-9]{10,15}$/, "phone_number must be 10-15 digits")
+    .optional(),
+  address: z
+    .string({
+      error: (issue) =>
+        issue.input === undefined
+          ? "address is required"
+          : "address must be string",
+    })
+    .min(4, "address must be at least 4 characters")
+    .max(1000, "address must be at maximum 1000 characters")
+    .regex(/^\d{1,5}\s\w.\s(\b\w*\b\s){1,2}\w*\.$/, {
+      error: (issue) =>
+        issue.input.length < 4
+          ? "address must be at least 4 letters"
+          : issue.input.length > 1000
+            ? "address must be at maximum 1000 letters"
+            : "address has invalid format",
+    })
+    .optional(),
+});
+
+module.exports = { createUserSchema, createUserUpdateSchema };

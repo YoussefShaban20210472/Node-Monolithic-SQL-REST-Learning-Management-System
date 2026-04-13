@@ -105,10 +105,40 @@ async function deleteUserById(id) {
     client.release();
   }
 }
+async function updateUserById(id, user) {
+  const client = await db.connect();
+  try {
+    const fields = [];
+    const values = [];
+    let index = 1;
+
+    for (let key in user) {
+      fields.push(`${key} = $${index}`);
+      values.push(user[key]);
+      index++;
+    }
+    values.push(id);
+
+    const query = `
+    UPDATE users
+    SET ${fields.join(", ")}
+    WHERE id = $${index}
+    RETURNING *
+  `;
+    const result = await client.query(query, values);
+
+    return result.rows[0] || null;
+  } catch (error) {
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 module.exports = {
   createUser,
   findUserByEmail,
   getAllUsers,
   findUserById,
   deleteUserById,
+  updateUserById,
 };

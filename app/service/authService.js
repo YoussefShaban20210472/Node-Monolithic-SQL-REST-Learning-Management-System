@@ -9,11 +9,10 @@ async function authenticateUser(token) {
   try {
     // Verfiy Token
     const decoded = verfiyToken(token);
-
+    const userTokenVersion =
+      (await redis.get(`user_${decoded.id}_tokenVersion`)) || "0";
     //  Check blacklist
-    const isBlacklisted =
-      (await redis.get(`blacklist_${token}`)) ||
-      (await redis.get(`blacklist_${decoded.id}`));
+    const isBlacklisted = decoded.tokenVersion !== userTokenVersion;
 
     if (isBlacklisted) {
       throw "BLACKLIST";
@@ -42,15 +41,27 @@ async function loginUser(user) {
   if (!isMatch) {
     throw { status: 404, message: "Accout Not Found" };
   }
+  const userTokenVersion =
+    (await redis.get(`user_${foundUser.id}_tokenVersion`)) || "0";
   // Generate Token
-  const token = generateToken({ id: foundUser.id, role: foundUser.role });
+  const token = generateToken({
+    id: foundUser.id,
+    role: foundUser.role,
+    tokenVersion: userTokenVersion,
+  });
   return token;
 }
 
-async function logoutUser(user, token) {
+async function logoutUser(user) {
+  const userTokenVersion =
+    (await redis.get(`user_${user.id}_tokenVersion`)) || "0";
   // remaining lifetime
   const expiresIn = user.exp - Math.floor(Date.now() / 1000);
-  await redis.set(`blacklist_${token}`, "true", expiresIn);
+  await redis.set(
+    `user_${user.id}_tokenVersion`,
+    `${Number(userTokenVersion) + 1}`,
+    expiresIn,
+  );
   return;
 }
 module.exports = { loginUser, authenticateUser, logoutUser };
