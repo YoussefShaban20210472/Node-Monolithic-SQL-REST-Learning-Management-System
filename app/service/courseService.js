@@ -1,5 +1,5 @@
 const { createCourseSchema } = require("../validator/courseValidator");
-const courseModel = require("../Model/courseModel");
+const courseModel = require("../model/courseModel");
 async function createCourse(instructor_id, course) {
   // Validate course
 
