@@ -85,10 +85,21 @@ async function updateUserById(id, user) {
   }
   return updatedUser;
 }
+async function assertValidInstructorId(id) {
+  if (!(typeof id === "string" && /^\d+$/.test(id))) {
+    throw { status: 400, message: "instructor_id must be interger string" };
+  }
+  const user = await findUserById(id);
+  if (user.role != "instructor") {
+    throw { status: 400, message: "instructor_id must be id of instructor" };
+  }
+}
+
 module.exports = {
   createUser,
   getAllUsers,
   findUserById,
   deleteUserById,
   updateUserById,
+  assertValidInstructorId,
 };
