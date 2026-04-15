@@ -17,7 +17,6 @@ async function insertGetId(entity_name, name) {
         `,
     [name],
   );
-
   return result.rows[0].id;
 }
 
@@ -103,6 +102,7 @@ async function createCourse(instructor_id, course) {
 async function getCourseById(id) {
   client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       select * from courses where id = $1 ;
     `;
@@ -110,8 +110,10 @@ async function getCourseById(id) {
     const values = [id];
 
     const result = await client.query(query, values);
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -120,6 +122,7 @@ async function getCourseById(id) {
 async function getFullCourseById(id) {
   client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
     SELECT 
       c.id,
@@ -165,8 +168,10 @@ async function getFullCourseById(id) {
     const values = [id];
 
     const result = await client.query(query, values);
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -176,6 +181,7 @@ async function getFullCourseById(id) {
 async function getAllFullCourses() {
   client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
     SELECT 
       c.id,
@@ -219,8 +225,10 @@ async function getAllFullCourses() {
   `;
 
     const result = await client.query(query);
+    await client.query("COMMIT");
     return result.rows;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -229,6 +237,7 @@ async function getAllFullCourses() {
 async function getAllInstructorFullCourses(instructor_id) {
   client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
     SELECT 
       c.id,
@@ -273,8 +282,10 @@ async function getAllInstructorFullCourses(instructor_id) {
   `;
     const values = [instructor_id];
     const result = await client.query(query, values);
+    await client.query("COMMIT");
     return result.rows;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -283,6 +294,7 @@ async function getAllInstructorFullCourses(instructor_id) {
 async function deleteCourseById(id) {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       delete from courses where id = $1 RETURNING *;
     `;
@@ -290,8 +302,10 @@ async function deleteCourseById(id) {
     const values = [id];
 
     const result = await client.query(query, values);
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -331,6 +345,7 @@ async function updateCourseById(id, course, tag, category) {
       const result = await client.query(updateQuery, values);
 
       if (result.rows.length === 0) {
+        await client.query("COMMIT");
         return null;
       }
     }

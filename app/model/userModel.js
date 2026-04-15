@@ -38,6 +38,7 @@ async function createUser(user) {
 async function findUserByEmail(email) {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       SELECT * FROM Users WHERE email = $1 LIMIT 1;
     `;
@@ -45,9 +46,10 @@ async function findUserByEmail(email) {
     const values = [email];
 
     const result = await client.query(query, values);
-
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -57,14 +59,17 @@ async function findUserByEmail(email) {
 async function getAllUsers() {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       SELECT id,first_name,last_name,email,phone_number,role,address,created_at,updated_at FROM Users;
     `;
 
     const result = await client.query(query);
-
+    await client.query("COMMIT");
     return result.rows;
   } catch (error) {
+    await client.query("ROLLBACK");
+
     throw error;
   } finally {
     client.release();
@@ -73,6 +78,7 @@ async function getAllUsers() {
 async function findUserById(id) {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       SELECT id,first_name,last_name,email,phone_number,role,address,created_at,updated_at FROM Users WHERE id = $1 LIMIT 1;
     `;
@@ -80,9 +86,10 @@ async function findUserById(id) {
     const values = [id];
 
     const result = await client.query(query, values);
-
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
     throw error;
   } finally {
     client.release();
@@ -91,6 +98,7 @@ async function findUserById(id) {
 async function deleteUserById(id) {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const query = `
       delete from users where id = $1 RETURNING *;
     `;
@@ -98,6 +106,7 @@ async function deleteUserById(id) {
     const values = [id];
 
     const result = await client.query(query, values);
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
     throw error;
@@ -108,6 +117,7 @@ async function deleteUserById(id) {
 async function updateUserById(id, user) {
   const client = await db.connect();
   try {
+    await client.query("BEGIN");
     const fields = [];
     const values = [];
     let index = 1;
@@ -126,9 +136,11 @@ async function updateUserById(id, user) {
     RETURNING *
   `;
     const result = await client.query(query, values);
-
+    await client.query("COMMIT");
     return result.rows[0] || null;
   } catch (error) {
+    await client.query("ROLLBACK");
+
     throw error;
   } finally {
     client.release();
