@@ -46,21 +46,22 @@ async function deleteUserById(id) {
   );
   return user;
 }
+
 async function updateUserById(id, user) {
   // Validate user
   // Schema Validation
   const validatedUser = createUserUpdateSchema.parse(user);
   let safeUser = {};
-  const safeFeils = [
+  const safeFields = [
     "first_name",
     "last_name",
     "email",
     "phone_number",
     "address",
   ];
-  safeFeils.forEach((safeFiled) => {
-    if (validatedUser[safeFiled] != null) {
-      safeUser[safeFiled] = validatedUser[safeFiled];
+  safeFields.forEach((safeField) => {
+    if (validatedUser[safeField] != null) {
+      safeUser[safeField] = validatedUser[safeField];
     }
   });
   if (Object.keys(safeUser).length === 0) {

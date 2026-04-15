@@ -6,9 +6,13 @@ function handleDbError(error) {
     case "23505": // unique violation
       return {
         status: 409,
-        errors: parseUniqueError(error),
+        errors: parseError(error, "is already existed"),
       };
-
+    case "23514": // constraint violation
+      return {
+        status: 400,
+        errors: parseError(error, "is violated contraints"),
+      };
     case "23502": // not null
       return {
         status: 400,
@@ -44,11 +48,11 @@ function handleDbError(error) {
   }
 }
 
-function parseUniqueError(error) {
+function parseError(error, message) {
   // users_email_key → email
   const parts = error.constraint.split("_");
   const column = parts.slice(1, -1).join("_");
-  return [{ property: `${column}`, message: `${column} is already existed` }];
+  return [{ property: `${column}`, message: `${column} ${message}` }];
 }
 
 module.exports = handleDbError;
