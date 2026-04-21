@@ -1,7 +1,6 @@
 const app = require("../../app");
 const request = require("supertest");
 
-jest.setTimeout(10000); // 10 seconds
 function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
@@ -160,7 +159,6 @@ describe("Testing Post /enrollment", () => {
         .post(`/course/${courseId}/enrollment`)
         .set("Authorization", `Bearer ${studentToken}`)
         .send();
-      console.log(studentToken, studentId, courseId, response.bod);
       expect(response.status).toBe(201);
     });
 
@@ -169,777 +167,776 @@ describe("Testing Post /enrollment", () => {
         .post(`/course/${courseId}/enrollment`)
         .set("Authorization", `Bearer ${adminToken}`)
         .send({ student_id: `${studentId}` });
-      console.log(adminToken, studentId, courseId, response.body);
       expect(response.status).toBe(201);
     });
   });
-  // describe("Negative Testing", () => {
-  //   let adminToken, studentToken, studentId, instructorToken;
-  //   let courseId;
-  //   beforeAll(async () => {
-  //     adminToken = await getToken(adminUser);
-  //     instructorToken = await getToken(instructorUser);
-  //     studentToken = await createAndLoginUser(createUser("student"));
-  //     let token = await createAndLoginUser(createUser("student"));
+  describe("Negative Testing", () => {
+    let adminToken, studentToken, studentId, instructorToken;
+    let courseId;
+    beforeAll(async () => {
+      adminToken = await getToken(adminUser);
+      instructorToken = await getToken(instructorUser);
+      studentToken = await createAndLoginUser(createUser("student"));
+      let token = await createAndLoginUser(createUser("student"));
 
-  //     let response = await request(app)
-  //       .get("/user/me")
-  //       .set("Authorization", `Bearer ${token}`)
-  //       .send();
-  //     studentId = response.body.user.id;
-  //     const course = createCourse();
-  //     response = await request(app)
-  //       .post("/course")
-  //       .set("Authorization", `Bearer ${instructorToken}`)
-  //       .send(course);
-  //     courseId = response.body.course.id;
-  //   });
-  //   describe("Should return 404 if the course is not found", () => {
-  //     let courseId = "999999";
-  //     it("Should return 404 if the course is not found (student)", async () => {
-  //       let response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${studentToken}`)
-  //         .send();
-  //       expect(response.status).toBe(404);
-  //     });
+      let response = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      studentId = response.body.user.id;
+      const course = createCourse();
+      response = await request(app)
+        .post("/course")
+        .set("Authorization", `Bearer ${instructorToken}`)
+        .send(course);
+      courseId = response.body.course.id;
+    });
+    describe("Should return 404 if the course is not found", () => {
+      let courseId = "999999";
+      it("Should return 404 if the course is not found (student)", async () => {
+        let response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        expect(response.status).toBe(404);
+      });
 
-  //     it("Should return 404 if the course is not found (admin)", async () => {
-  //       let response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${adminToken}`)
-  //         .send({ student_id: `${studentId}` });
-  //       expect(response.status).toBe(404);
-  //     });
-  //   });
-  //   describe("Should return 400 if request body is (missing, empty, invalid)", () => {
-  //     const scenarios = [
-  //       { name: "missing", values: [undefined] },
-  //       { name: "empty", values: [""] },
-  //       { name: "invalid", values: ["adad", "{}"] },
-  //     ];
+      it("Should return 404 if the course is not found (admin)", async () => {
+        let response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
+    });
+    describe("Should return 400 if request body is (missing, empty, invalid)", () => {
+      const scenarios = [
+        { name: "missing", values: [undefined] },
+        { name: "empty", values: [""] },
+        { name: "invalid", values: ["adad", "{}"] },
+      ];
 
-  //     scenarios.forEach((scenarios) => {
-  //       const values = scenarios.values;
-  //       values.forEach((value) => {
-  //         it(`Should return 400 if request body is ${scenarios.name} (${value})`, async () => {
-  //           let response = await request(app)
-  //             .post(`/course/${courseId}/enrollment`)
-  //             .set("Authorization", `Bearer ${adminToken}`)
-  //             .send(value);
-  //           expect(response.status).toBe(400);
-  //         });
-  //       });
-  //     });
-  //   });
+      scenarios.forEach((scenarios) => {
+        const values = scenarios.values;
+        values.forEach((value) => {
+          it(`Should return 400 if request body is ${scenarios.name} (${value})`, async () => {
+            let response = await request(app)
+              .post(`/course/${courseId}/enrollment`)
+              .set("Authorization", `Bearer ${adminToken}`)
+              .send(value);
+            expect(response.status).toBe(400);
+          });
+        });
+      });
+    });
 
-  //   describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
-  //     const scenarios = [
-  //       {
-  //         name: "missing",
-  //         setHeader: (req) => req, // do nothing
-  //       },
-  //       {
-  //         name: "empty",
-  //         setHeader: (req) => req.set("Authorization", ""),
-  //       },
-  //       {
-  //         name: "invalid",
-  //         values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
-  //       },
-  //       {
-  //         name: "Unauthorized",
-  //         values: [{ name: "instructor user", token: () => instructorToken }],
-  //       },
-  //     ];
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+        {
+          name: "Unauthorized",
+          values: [{ name: "instructor user", token: () => instructorToken }],
+        },
+      ];
 
-  //     scenarios.forEach((scenario) => {
-  //       if (scenario.name === "invalid") {
-  //         scenario.values.forEach((value) => {
-  //           it(`should return 401 if Authorization is invalid (${value})`, async () => {
-  //             const response = await request(app)
-  //               .post(`/course/${courseId}/enrollment`)
-  //               .set("Authorization", value)
-  //               .send();
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is invalid (${value})`, async () => {
+              const response = await request(app)
+                .post(`/course/${courseId}/enrollment`)
+                .set("Authorization", value)
+                .send();
 
-  //             expect(response.status).toBe(401);
-  //             expect(response.body.errors[0]).toHaveProperty("message");
-  //           });
-  //         });
-  //       } else if (scenario.name === "Unauthorized") {
-  //         scenario.values.forEach((value) => {
-  //           it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
-  //             const response = await request(app)
-  //               .post(`/course/${courseId}/enrollment`)
-  //               .set("Authorization", `Bearer ${value.token()}`)
-  //               .send();
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else if (scenario.name === "Unauthorized") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
+              const response = await request(app)
+                .post(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${value.token()}`)
+                .send();
 
-  //             expect(response.status).toBe(401);
-  //             expect(response.body.errors[0]).toHaveProperty("message");
-  //           });
-  //         });
-  //       } else {
-  //         it(`should return 401 if Authorization is ${scenario.name}`, async () => {
-  //           let req = request(app)
-  //             .post(`/course/${courseId}/enrollment`)
-  //             .send();
-  //           req = scenario.setHeader(req);
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else {
+          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
+            let req = request(app)
+              .post(`/course/${courseId}/enrollment`)
+              .send();
+            req = scenario.setHeader(req);
 
-  //           const response = await req;
+            const response = await req;
 
-  //           expect(response.status).toBe(401);
-  //           expect(response.body.errors[0]).toHaveProperty("message");
-  //         });
-  //       }
-  //     });
-  //   });
-  //   describe("Should return 409 if a student tries to enroll twice to a same course.", () => {
-  //     let adminToken, instructorToken, studentToken, studentId;
-  //     let courseId;
-  //     beforeAll(async () => {
-  //       adminToken = await getToken(adminUser);
-  //       instructorToken = await getToken(instructorUser);
-  //       studentToken = await createAndLoginUser(createUser("student"));
-  //       let token = await createAndLoginUser(createUser("student"));
+            expect(response.status).toBe(401);
+            expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
+    describe("Should return 409 if a student tries to enroll twice to a same course.", () => {
+      let adminToken, instructorToken, studentToken, studentId;
+      let courseId;
+      beforeAll(async () => {
+        adminToken = await getToken(adminUser);
+        instructorToken = await getToken(instructorUser);
+        studentToken = await createAndLoginUser(createUser("student"));
+        let token = await createAndLoginUser(createUser("student"));
 
-  //       let response = await request(app)
-  //         .get("/user/me")
-  //         .set("Authorization", `Bearer ${token}`)
-  //         .send();
-  //       studentId = response.body.user.id;
-  //       const course = createCourse();
-  //       response = await request(app)
-  //         .post("/course")
-  //         .set("Authorization", `Bearer ${instructorToken}`)
-  //         .send(course);
-  //       courseId = response.body.course.id;
-  //     });
+        let response = await request(app)
+          .get("/user/me")
+          .set("Authorization", `Bearer ${token}`)
+          .send();
+        studentId = response.body.user.id;
+        const course = createCourse();
+        response = await request(app)
+          .post("/course")
+          .set("Authorization", `Bearer ${instructorToken}`)
+          .send(course);
+        courseId = response.body.course.id;
+      });
 
-  //     it("Should allow student to enroll to a course", async () => {
-  //       let response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${studentToken}`)
-  //         .send();
-  //       response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${studentToken}`)
-  //         .send();
-  //       expect(response.status).toBe(409);
-  //     });
+      it("Should allow student to enroll to a course", async () => {
+        let response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        expect(response.status).toBe(409);
+      });
 
-  //     it("Should allow admin to enroll a student to a course", async () => {
-  //       let response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${adminToken}`)
-  //         .send({ student_id: `${studentId}` });
-  //       response = await request(app)
-  //         .post(`/course/${courseId}/enrollment`)
-  //         .set("Authorization", `Bearer ${adminToken}`)
-  //         .send({ student_id: `${studentId}` });
-  //       expect(response.status).toBe(409);
-  //     });
-  //   });
-  //   describe("Enrollment body Validation", () => {
-  //     const requiredFields = ["student_id"];
+      it("Should allow admin to enroll a student to a course", async () => {
+        let response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ student_id: `${studentId}` });
+        response = await request(app)
+          .post(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ student_id: `${studentId}` });
+        expect(response.status).toBe(409);
+      });
+    });
+    describe("Enrollment body Validation", () => {
+      const requiredFields = ["student_id"];
 
-  //     // Define all scenarios: missing, empty, invalid
-  //     const scenarios = ["missing", "empty", "invalid"];
-  //     requiredFields.forEach((field) => {
-  //       scenarios.forEach((scenario) => {
-  //         let values = [];
+      // Define all scenarios: missing, empty, invalid
+      const scenarios = ["missing", "empty", "invalid"];
+      requiredFields.forEach((field) => {
+        scenarios.forEach((scenario) => {
+          let values = [];
 
-  //         if (scenario === "missing") {
-  //           values = [undefined]; // field will be deleted
-  //         } else if (scenario === "empty") {
-  //           values = [""]; // empty string
-  //         } else if (scenario === "invalid") {
-  //           values = commonInvalids; // invalid values
-  //         }
+          if (scenario === "missing") {
+            values = [undefined]; // field will be deleted
+          } else if (scenario === "empty") {
+            values = [""]; // empty string
+          } else if (scenario === "invalid") {
+            values = commonInvalids; // invalid values
+          }
 
-  //         values.forEach((value) => {
-  //           it(`should return 400 if ${field} is ${scenario}${
-  //             scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
-  //           }`, async () => {
-  //             const enrollment = { student_id: "1" };
+          values.forEach((value) => {
+            it(`should return 400 if ${field} is ${scenario}${
+              scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
+            }`, async () => {
+              const enrollment = { student_id: "1" };
 
-  //             if (scenario === "missing") delete enrollment[field];
-  //             else enrollment[field] = value;
+              if (scenario === "missing") delete enrollment[field];
+              else enrollment[field] = value;
 
-  //             const response = await request(app)
-  //               .post(`/course/${courseId}/enrollment`)
-  //               .set("Authorization", `Bearer ${adminToken}`)
-  //               .send(enrollment);
+              const response = await request(app)
+                .post(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send(enrollment);
 
-  //             expect(response.status).toBe(400);
-  //             expect(response.body.errors[0]).toHaveProperty("message");
-  //           });
-  //         });
-  //       });
-  //     });
-  //   });
-  // });
+              expect(response.status).toBe(400);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        });
+      });
+    });
+  });
 });
 
-// describe("Testing Delete /enrollment", () => {
-//   describe("Positive Testing", () => {
-//     let adminToken, instructorToken, studentToken, studentId;
-//     let courseId;
-//     beforeAll(async () => {
-//       adminToken = await getToken(adminUser);
-//       instructorToken = await getToken(instructorUser);
-//       studentToken = await createAndLoginUser(createUser("student"));
-//       let token = await createAndLoginUser(createUser("student"));
+describe("Testing Delete /enrollment", () => {
+  describe("Positive Testing", () => {
+    let adminToken, instructorToken, studentToken, studentId;
+    let courseId;
+    beforeAll(async () => {
+      adminToken = await getToken(adminUser);
+      instructorToken = await getToken(instructorUser);
+      studentToken = await createAndLoginUser(createUser("student"));
+      let token = await createAndLoginUser(createUser("student"));
 
-//       let response = await request(app)
-//         .get("/user/me")
-//         .set("Authorization", `Bearer ${token}`)
-//         .send();
-//       studentId = response.body.user.id;
-//       const course = createCourse();
-//       response = await request(app)
-//         .post("/course")
-//         .set("Authorization", `Bearer ${instructorToken}`)
-//         .send(course);
-//       courseId = response.body.course.id;
-//     });
+      let response = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      studentId = response.body.user.id;
+      const course = createCourse();
+      response = await request(app)
+        .post("/course")
+        .set("Authorization", `Bearer ${instructorToken}`)
+        .send(course);
+      courseId = response.body.course.id;
+    });
 
-//     it("Should allow student to unenroll to a course", async () => {
-//       let response = await request(app)
-//         .post(`/course/${courseId}/enrollment`)
-//         .set("Authorization", `Bearer ${studentToken}`)
-//         .send();
-//       response = await request(app)
-//         .delete(`/course/${courseId}/enrollment`)
-//         .set("Authorization", `Bearer ${studentToken}`)
-//         .send();
-//       expect(response.status).toBe(200);
-//     });
+    it("Should allow student to unenroll to a course", async () => {
+      let response = await request(app)
+        .post(`/course/${courseId}/enrollment`)
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send();
+      response = await request(app)
+        .delete(`/course/${courseId}/enrollment`)
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send();
+      expect(response.status).toBe(200);
+    });
 
-//     it("Should allow admin to unenroll a student to a course", async () => {
-//       let response = await request(app)
-//         .post(`/course/${courseId}/enrollment`)
-//         .set("Authorization", `Bearer ${adminToken}`)
-//         .send({ student_id: `${studentId}` });
-//       response = await request(app)
-//         .delete(`/course/${courseId}/enrollment`)
-//         .set("Authorization", `Bearer ${adminToken}`)
-//         .send({ student_id: `${studentId}` });
-//       expect(response.status).toBe(200);
-//     });
-//   });
-//   describe("Negative Testing", () => {
-//     let adminToken, studentToken, studentId, instructorToken;
-//     let courseId;
-//     beforeAll(async () => {
-//       adminToken = await getToken(adminUser);
-//       instructorToken = await getToken(instructorUser);
-//       studentToken = await createAndLoginUser(createUser("student"));
-//       let token = await createAndLoginUser(createUser("student"));
+    it("Should allow admin to unenroll a student to a course", async () => {
+      let response = await request(app)
+        .post(`/course/${courseId}/enrollment`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ student_id: `${studentId}` });
+      response = await request(app)
+        .delete(`/course/${courseId}/enrollment`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .send({ student_id: `${studentId}` });
+      expect(response.status).toBe(200);
+    });
+  });
+  describe("Negative Testing", () => {
+    let adminToken, studentToken, studentId, instructorToken;
+    let courseId;
+    beforeAll(async () => {
+      adminToken = await getToken(adminUser);
+      instructorToken = await getToken(instructorUser);
+      studentToken = await createAndLoginUser(createUser("student"));
+      let token = await createAndLoginUser(createUser("student"));
 
-//       let response = await request(app)
-//         .get("/user/me")
-//         .set("Authorization", `Bearer ${token}`)
-//         .send();
-//       studentId = response.body.user.id;
-//       const course = createCourse();
-//       response = await request(app)
-//         .post("/course")
-//         .set("Authorization", `Bearer ${instructorToken}`)
-//         .send(course);
-//       courseId = response.body.course.id;
-//     });
-//     describe("Should return 404 if the course is not found", () => {
-//       let courseId = "999999";
-//       it("Should return 404 if the course is not found (student)", async () => {
-//         let response = await request(app)
-//           .delete(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${studentToken}`)
-//           .send();
-//         expect(response.status).toBe(404);
-//       });
+      let response = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      studentId = response.body.user.id;
+      const course = createCourse();
+      response = await request(app)
+        .post("/course")
+        .set("Authorization", `Bearer ${instructorToken}`)
+        .send(course);
+      courseId = response.body.course.id;
+    });
+    describe("Should return 404 if the course is not found", () => {
+      let courseId = "999999";
+      it("Should return 404 if the course is not found (student)", async () => {
+        let response = await request(app)
+          .delete(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        expect(response.status).toBe(404);
+      });
 
-//       it("Should return 404 if the course is not found (admin)", async () => {
-//         let response = await request(app)
-//           .delete(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${adminToken}`)
-//           .send({ student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
-//     });
-//     describe("Should return 404 if the enrollment is not found", () => {
-//       it("Should return 404 if the enrollment is not found (student)", async () => {
-//         let response = await request(app)
-//           .delete(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${studentToken}`)
-//           .send();
-//         expect(response.status).toBe(404);
-//       });
+      it("Should return 404 if the course is not found (admin)", async () => {
+        let response = await request(app)
+          .delete(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
+    });
+    describe("Should return 404 if the enrollment is not found", () => {
+      it("Should return 404 if the enrollment is not found (student)", async () => {
+        let response = await request(app)
+          .delete(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        expect(response.status).toBe(404);
+      });
 
-//       it("Should return 404 if the enrollment is not found (admin)", async () => {
-//         let response = await request(app)
-//           .delete(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${adminToken}`)
-//           .send({ student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
-//     });
-//     describe("Should return 400 if request body is (missing, empty, invalid)", () => {
-//       const scenarios = [
-//         { name: "missing", values: [undefined] },
-//         { name: "empty", values: [""] },
-//         { name: "invalid", values: ["adad", "{}"] },
-//       ];
+      it("Should return 404 if the enrollment is not found (admin)", async () => {
+        let response = await request(app)
+          .delete(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
+    });
+    describe("Should return 400 if request body is (missing, empty, invalid)", () => {
+      const scenarios = [
+        { name: "missing", values: [undefined] },
+        { name: "empty", values: [""] },
+        { name: "invalid", values: ["adad", "{}"] },
+      ];
 
-//       scenarios.forEach((scenarios) => {
-//         const values = scenarios.values;
-//         values.forEach((value) => {
-//           it(`Should return 400 if request body is ${scenarios.name} (${value})`, async () => {
-//             let response = await request(app)
-//               .delete(`/course/${courseId}/enrollment`)
-//               .set("Authorization", `Bearer ${adminToken}`)
-//               .send(value);
-//             expect(response.status).toBe(400);
-//           });
-//         });
-//       });
-//     });
+      scenarios.forEach((scenarios) => {
+        const values = scenarios.values;
+        values.forEach((value) => {
+          it(`Should return 400 if request body is ${scenarios.name} (${value})`, async () => {
+            let response = await request(app)
+              .delete(`/course/${courseId}/enrollment`)
+              .set("Authorization", `Bearer ${adminToken}`)
+              .send(value);
+            expect(response.status).toBe(400);
+          });
+        });
+      });
+    });
 
-//     describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
-//       const scenarios = [
-//         {
-//           name: "missing",
-//           setHeader: (req) => req, // do nothing
-//         },
-//         {
-//           name: "empty",
-//           setHeader: (req) => req.set("Authorization", ""),
-//         },
-//         {
-//           name: "invalid",
-//           values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
-//         },
-//         {
-//           name: "Unauthorized",
-//           values: [{ name: "instructor user", token: () => instructorToken }],
-//         },
-//       ];
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+        {
+          name: "Unauthorized",
+          values: [{ name: "instructor user", token: () => instructorToken }],
+        },
+      ];
 
-//       scenarios.forEach((scenario) => {
-//         if (scenario.name === "invalid") {
-//           scenario.values.forEach((value) => {
-//             it(`should return 401 if Authorization is invalid (${value})`, async () => {
-//               const response = await request(app)
-//                 .delete(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", value)
-//                 .send();
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is invalid (${value})`, async () => {
+              const response = await request(app)
+                .delete(`/course/${courseId}/enrollment`)
+                .set("Authorization", value)
+                .send();
 
-//               expect(response.status).toBe(401);
-//               expect(response.body.errors[0]).toHaveProperty("message");
-//             });
-//           });
-//         } else if (scenario.name === "Unauthorized") {
-//           scenario.values.forEach((value) => {
-//             it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
-//               const response = await request(app)
-//                 .delete(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", `Bearer ${value.token()}`)
-//                 .send();
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else if (scenario.name === "Unauthorized") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
+              const response = await request(app)
+                .delete(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${value.token()}`)
+                .send();
 
-//               expect(response.status).toBe(401);
-//               expect(response.body.errors[0]).toHaveProperty("message");
-//             });
-//           });
-//         } else {
-//           it(`should return 401 if Authorization is ${scenario.name}`, async () => {
-//             let req = request(app)
-//               .delete(`/course/${courseId}/enrollment`)
-//               .send();
-//             req = scenario.setHeader(req);
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else {
+          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
+            let req = request(app)
+              .delete(`/course/${courseId}/enrollment`)
+              .send();
+            req = scenario.setHeader(req);
 
-//             const response = await req;
+            const response = await req;
 
-//             expect(response.status).toBe(401);
-//             expect(response.body.errors[0]).toHaveProperty("message");
-//           });
-//         }
-//       });
-//     });
-//     describe("Should return 409 if a student tries to delete his rejected enrollment", () => {
-//       let adminToken, instructorToken, studentToken, studentId;
-//       let courseId;
-//       beforeAll(async () => {
-//         adminToken = await getToken(adminUser);
-//         instructorToken = await getToken(instructorUser);
+            expect(response.status).toBe(401);
+            expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
+    describe("Should return 409 if a student tries to delete his rejected enrollment", () => {
+      let adminToken, instructorToken, studentToken, studentId;
+      let courseId;
+      beforeAll(async () => {
+        adminToken = await getToken(adminUser);
+        instructorToken = await getToken(instructorUser);
 
-//         const course = createCourse();
-//         response = await request(app)
-//           .post("/course")
-//           .set("Authorization", `Bearer ${instructorToken}`)
-//           .send(course);
-//         courseId = response.body.course.id;
-//       });
-//       beforeEach(async () => {
-//         studentToken = await createAndLoginUser(createUser("student"));
+        const course = createCourse();
+        response = await request(app)
+          .post("/course")
+          .set("Authorization", `Bearer ${instructorToken}`)
+          .send(course);
+        courseId = response.body.course.id;
+      });
+      beforeEach(async () => {
+        studentToken = await createAndLoginUser(createUser("student"));
 
-//         let response = await request(app)
-//           .get("/user/me")
-//           .set("Authorization", `Bearer ${studentToken}`)
-//           .send();
-//         studentId = response.body.user.id;
-//       });
+        let response = await request(app)
+          .get("/user/me")
+          .set("Authorization", `Bearer ${studentToken}`)
+          .send();
+        studentId = response.body.user.id;
+      });
 
-//       const roles = [
-//         {
-//           name: "student",
-//           token: () => {
-//             return studentToken;
-//           },
-//           body: () => undefined,
-//         },
-//         {
-//           name: "admin",
-//           token: () => {
-//             return adminToken;
-//           },
-//           body: () => {
-//             return { student_id: `${studentId}` };
-//           },
-//         },
-//       ];
-//       roles.forEach((role) => {
-//         it(`Should return 409 if a student tries to delete his rejected enrollment (${role.name})`, async () => {
-//           let response = await request(app)
-//             .post(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${studentToken}`)
-//             .send();
-//           expect(response.status).toBe(201);
+      const roles = [
+        {
+          name: "student",
+          token: () => {
+            return studentToken;
+          },
+          body: () => undefined,
+        },
+        {
+          name: "admin",
+          token: () => {
+            return adminToken;
+          },
+          body: () => {
+            return { student_id: `${studentId}` };
+          },
+        },
+      ];
+      roles.forEach((role) => {
+        it(`Should return 409 if a student tries to delete his rejected enrollment (${role.name})`, async () => {
+          let response = await request(app)
+            .post(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${studentToken}`)
+            .send();
+          expect(response.status).toBe(201);
 
-//           response = await request(app)
-//             .put(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${instructorToken}`)
-//             .send({ status: "rejected", student_id: `${studentId}` });
-//           expect(response.status).toBe(200);
+          response = await request(app)
+            .put(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${instructorToken}`)
+            .send({ status: "rejected", student_id: `${studentId}` });
+          expect(response.status).toBe(200);
 
-//           response = await request(app)
-//             .delete(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${role.token()}`)
-//             .send(role.body());
-//           expect(response.status).toBe(409);
-//         });
-//       });
-//     });
-//     describe("Enrollment body Validation", () => {
-//       const requiredFields = ["student_id"];
+          response = await request(app)
+            .delete(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send(role.body());
+          expect(response.status).toBe(409);
+        });
+      });
+    });
+    describe("Enrollment body Validation", () => {
+      const requiredFields = ["student_id"];
 
-//       // Define all scenarios: missing, empty, invalid
-//       const scenarios = ["missing", "empty", "invalid"];
-//       requiredFields.forEach((field) => {
-//         scenarios.forEach((scenario) => {
-//           let values = [];
+      // Define all scenarios: missing, empty, invalid
+      const scenarios = ["missing", "empty", "invalid"];
+      requiredFields.forEach((field) => {
+        scenarios.forEach((scenario) => {
+          let values = [];
 
-//           if (scenario === "missing") {
-//             values = [undefined]; // field will be deleted
-//           } else if (scenario === "empty") {
-//             values = [""]; // empty string
-//           } else if (scenario === "invalid") {
-//             values = commonInvalids; // invalid values
-//           }
+          if (scenario === "missing") {
+            values = [undefined]; // field will be deleted
+          } else if (scenario === "empty") {
+            values = [""]; // empty string
+          } else if (scenario === "invalid") {
+            values = commonInvalids; // invalid values
+          }
 
-//           values.forEach((value) => {
-//             it(`should return 400 if ${field} is ${scenario}${
-//               scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
-//             }`, async () => {
-//               const enrollment = { student_id: "1" };
+          values.forEach((value) => {
+            it(`should return 400 if ${field} is ${scenario}${
+              scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
+            }`, async () => {
+              const enrollment = { student_id: "1" };
 
-//               if (scenario === "missing") delete enrollment[field];
-//               else enrollment[field] = value;
+              if (scenario === "missing") delete enrollment[field];
+              else enrollment[field] = value;
 
-//               const response = await request(app)
-//                 .delete(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", `Bearer ${adminToken}`)
-//                 .send(enrollment);
+              const response = await request(app)
+                .delete(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${adminToken}`)
+                .send(enrollment);
 
-//               expect(response.status).toBe(400);
-//               expect(response.body.errors[0]).toHaveProperty("message");
-//             });
-//           });
-//         });
-//       });
-//     });
-//   });
-// });
+              expect(response.status).toBe(400);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        });
+      });
+    });
+  });
+});
 
-// describe("Testing Put /enrollment", () => {
-//   describe("Positive Testing", () => {
-//     let adminToken, instructorToken, studentToken, studentId;
-//     let courseId;
-//     beforeAll(async () => {
-//       adminToken = await getToken(adminUser);
-//       instructorToken = await getToken(instructorUser);
+describe("Testing Put /enrollment", () => {
+  describe("Positive Testing", () => {
+    let adminToken, instructorToken, studentToken, studentId;
+    let courseId;
+    beforeAll(async () => {
+      adminToken = await getToken(adminUser);
+      instructorToken = await getToken(instructorUser);
 
-//       const course = createCourse();
-//       response = await request(app)
-//         .post("/course")
-//         .set("Authorization", `Bearer ${instructorToken}`)
-//         .send(course);
-//       courseId = response.body.course.id;
-//     });
-//     beforeEach(async () => {
-//       studentToken = await createAndLoginUser(createUser("student"));
+      const course = createCourse();
+      response = await request(app)
+        .post("/course")
+        .set("Authorization", `Bearer ${instructorToken}`)
+        .send(course);
+      courseId = response.body.course.id;
+    });
+    beforeEach(async () => {
+      studentToken = await createAndLoginUser(createUser("student"));
 
-//       let response = await request(app)
-//         .get("/user/me")
-//         .set("Authorization", `Bearer ${studentToken}`)
-//         .send();
-//       studentId = response.body.user.id;
-//     });
+      let response = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${studentToken}`)
+        .send();
+      studentId = response.body.user.id;
+    });
 
-//     const roles = [
-//       {
-//         name: "instructor",
-//         token: () => {
-//           return instructorToken;
-//         },
-//       },
-//       {
-//         name: "admin",
-//         token: () => {
-//           return adminToken;
-//         },
-//       },
-//     ];
-//     roles.forEach((role) => {
-//       const values = ["accepted", "rejected"];
-//       values.forEach((value) => {
-//         it(`Should allow ${role.name} to accept/reject an enrollment (${value}) `, async () => {
-//           let response = await request(app)
-//             .post(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${studentToken}`)
-//             .send();
-//           expect(response.status).toBe(201);
-//           response = await request(app)
-//             .put(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${role.token()}`)
-//             .send({ status: value, student_id: `${studentId}` });
-//           expect(response.status).toBe(200);
+    const roles = [
+      {
+        name: "instructor",
+        token: () => {
+          return instructorToken;
+        },
+      },
+      {
+        name: "admin",
+        token: () => {
+          return adminToken;
+        },
+      },
+    ];
+    roles.forEach((role) => {
+      const values = ["accepted", "rejected"];
+      values.forEach((value) => {
+        it(`Should allow ${role.name} to accept/reject an enrollment (${value}) `, async () => {
+          let response = await request(app)
+            .post(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${studentToken}`)
+            .send();
+          expect(response.status).toBe(201);
+          response = await request(app)
+            .put(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send({ status: value, student_id: `${studentId}` });
+          expect(response.status).toBe(200);
 
-//           response = await request(app)
-//             .put(`/course/${courseId}/enrollment`)
-//             .set("Authorization", `Bearer ${role.token()}`)
-//             .send({
-//               status: value == "accepted" ? "rejected" : "accepted",
-//               student_id: `${studentId}`,
-//             });
-//           expect(response.status).toBe(200);
-//         });
-//       });
-//     });
-//   });
-//   describe("Negative Testing", () => {
-//     let adminToken, studentToken, studentId, instructorToken, instructorToken2;
-//     let courseId;
-//     beforeAll(async () => {
-//       adminToken = await getToken(adminUser);
-//       instructorToken = await getToken(instructorUser);
-//       instructorToken2 = await getToken(createCourse("instructor"));
-//       studentToken = await createAndLoginUser(createUser("student"));
-//       let token = await createAndLoginUser(createUser("student"));
+          response = await request(app)
+            .put(`/course/${courseId}/enrollment`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send({
+              status: value == "accepted" ? "rejected" : "accepted",
+              student_id: `${studentId}`,
+            });
+          expect(response.status).toBe(200);
+        });
+      });
+    });
+  });
+  describe("Negative Testing", () => {
+    let adminToken, studentToken, studentId, instructorToken, instructorToken2;
+    let courseId;
+    beforeAll(async () => {
+      adminToken = await getToken(adminUser);
+      instructorToken = await getToken(instructorUser);
+      instructorToken2 = await getToken(createCourse("instructor"));
+      studentToken = await createAndLoginUser(createUser("student"));
+      let token = await createAndLoginUser(createUser("student"));
 
-//       let response = await request(app)
-//         .get("/user/me")
-//         .set("Authorization", `Bearer ${token}`)
-//         .send();
-//       studentId = response.body.user.id;
-//       const course = createCourse();
-//       response = await request(app)
-//         .post("/course")
-//         .set("Authorization", `Bearer ${instructorToken}`)
-//         .send(course);
-//       courseId = response.body.course.id;
-//     });
-//     describe("Should return 404 if the course is not found", () => {
-//       let courseId = "999999";
-//       it("Should return 404 if the course is not found (student)", async () => {
-//         let response = await request(app)
-//           .put(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${instructorToken}`)
-//           .send({ status: "accepted", student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
+      let response = await request(app)
+        .get("/user/me")
+        .set("Authorization", `Bearer ${token}`)
+        .send();
+      studentId = response.body.user.id;
+      const course = createCourse();
+      response = await request(app)
+        .post("/course")
+        .set("Authorization", `Bearer ${instructorToken}`)
+        .send(course);
+      courseId = response.body.course.id;
+    });
+    describe("Should return 404 if the course is not found", () => {
+      let courseId = "999999";
+      it("Should return 404 if the course is not found (student)", async () => {
+        let response = await request(app)
+          .put(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${instructorToken}`)
+          .send({ status: "accepted", student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
 
-//       it("Should return 404 if the course is not found (admin)", async () => {
-//         let response = await request(app)
-//           .put(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${adminToken}`)
-//           .send({ status: "accepted", student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
-//     });
+      it("Should return 404 if the course is not found (admin)", async () => {
+        let response = await request(app)
+          .put(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ status: "accepted", student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
+    });
 
-//     describe("Should return 404 if the enrollment is not found", () => {
-//       it("Should return 404 if the enrollment is not found (student)", async () => {
-//         let response = await request(app)
-//           .put(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${instructorToken}`)
-//           .send({ status: "accepted", student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
+    describe("Should return 404 if the enrollment is not found", () => {
+      it("Should return 404 if the enrollment is not found (student)", async () => {
+        let response = await request(app)
+          .put(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${instructorToken}`)
+          .send({ status: "accepted", student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
 
-//       it("Should return 404 if the enrollment is not found (admin)", async () => {
-//         let response = await request(app)
-//           .put(`/course/${courseId}/enrollment`)
-//           .set("Authorization", `Bearer ${adminToken}`)
-//           .send({ status: "accepted", student_id: `${studentId}` });
-//         expect(response.status).toBe(404);
-//       });
-//     });
-//     describe("Should return 400 if request body is (missing, empty, invalid)", () => {
-//       const scenarios = [
-//         { name: "missing", values: [undefined] },
-//         { name: "empty", values: [""] },
-//         { name: "invalid", values: ["adad", "{}"] },
-//       ];
-//       const roles = [
-//         {
-//           name: "admin",
-//           token: () => {
-//             return adminToken;
-//           },
-//           name: "instructor",
-//           token: () => {
-//             return instructorToken;
-//           },
-//         },
-//       ];
-//       roles.forEach((role) => {
-//         scenarios.forEach((scenarios) => {
-//           const values = scenarios.values;
-//           values.forEach((value) => {
-//             it(`Should return 400 if request body is ${scenarios.name} (${value}) (${role.name})`, async () => {
-//               let response = await request(app)
-//                 .put(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", `Bearer ${role.token()}`)
-//                 .send(value);
-//               expect(response.status).toBe(400);
-//             });
-//           });
-//         });
-//       });
-//     });
+      it("Should return 404 if the enrollment is not found (admin)", async () => {
+        let response = await request(app)
+          .put(`/course/${courseId}/enrollment`)
+          .set("Authorization", `Bearer ${adminToken}`)
+          .send({ status: "accepted", student_id: `${studentId}` });
+        expect(response.status).toBe(404);
+      });
+    });
+    describe("Should return 400 if request body is (missing, empty, invalid)", () => {
+      const scenarios = [
+        { name: "missing", values: [undefined] },
+        { name: "empty", values: [""] },
+        { name: "invalid", values: ["adad", "{}"] },
+      ];
+      const roles = [
+        {
+          name: "admin",
+          token: () => {
+            return adminToken;
+          },
+          name: "instructor",
+          token: () => {
+            return instructorToken;
+          },
+        },
+      ];
+      roles.forEach((role) => {
+        scenarios.forEach((scenarios) => {
+          const values = scenarios.values;
+          values.forEach((value) => {
+            it(`Should return 400 if request body is ${scenarios.name} (${value}) (${role.name})`, async () => {
+              let response = await request(app)
+                .put(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${role.token()}`)
+                .send(value);
+              expect(response.status).toBe(400);
+            });
+          });
+        });
+      });
+    });
 
-//     describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
-//       const scenarios = [
-//         {
-//           name: "missing",
-//           setHeader: (req) => req, // do nothing
-//         },
-//         {
-//           name: "empty",
-//           setHeader: (req) => req.set("Authorization", ""),
-//         },
-//         {
-//           name: "invalid",
-//           values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
-//         },
-//         {
-//           name: "Unauthorized",
-//           values: [
-//             { name: "instructor user", token: () => instructorToken2 },
-//             { name: "student user", token: () => studentToken },
-//           ],
-//         },
-//       ];
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+        {
+          name: "Unauthorized",
+          values: [
+            { name: "instructor user", token: () => instructorToken2 },
+            { name: "student user", token: () => studentToken },
+          ],
+        },
+      ];
 
-//       scenarios.forEach((scenario) => {
-//         if (scenario.name === "invalid") {
-//           scenario.values.forEach((value) => {
-//             it(`should return 401 if Authorization is invalid (${value})`, async () => {
-//               const response = await request(app)
-//                 .put(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", value)
-//                 .send({ status: "accepted", student_id: `${studentId}` });
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is invalid (${value})`, async () => {
+              const response = await request(app)
+                .put(`/course/${courseId}/enrollment`)
+                .set("Authorization", value)
+                .send({ status: "accepted", student_id: `${studentId}` });
 
-//               expect(response.status).toBe(401);
-//               expect(response.body.errors[0]).toHaveProperty("message");
-//             });
-//           });
-//         } else if (scenario.name === "Unauthorized") {
-//           scenario.values.forEach((value) => {
-//             it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
-//               const response = await request(app)
-//                 .put(`/course/${courseId}/enrollment`)
-//                 .set("Authorization", `Bearer ${value.token()}`)
-//                 .send({ status: "accepted", student_id: `${studentId}` });
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else if (scenario.name === "Unauthorized") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
+              const response = await request(app)
+                .put(`/course/${courseId}/enrollment`)
+                .set("Authorization", `Bearer ${value.token()}`)
+                .send({ status: "accepted", student_id: `${studentId}` });
 
-//               expect(response.status).toBe(401);
-//               expect(response.body.errors[0]).toHaveProperty("message");
-//             });
-//           });
-//         } else {
-//           it(`should return 401 if Authorization is ${scenario.name}`, async () => {
-//             let req = request(app)
-//               .put(`/course/${courseId}/enrollment`)
-//               .send({ status: "accepted", student_id: `${studentId}` });
-//             req = scenario.setHeader(req);
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else {
+          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
+            let req = request(app)
+              .put(`/course/${courseId}/enrollment`)
+              .send({ status: "accepted", student_id: `${studentId}` });
+            req = scenario.setHeader(req);
 
-//             const response = await req;
+            const response = await req;
 
-//             expect(response.status).toBe(401);
-//             expect(response.body.errors[0]).toHaveProperty("message");
-//           });
-//         }
-//       });
-//     });
+            expect(response.status).toBe(401);
+            expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
 
-//     describe("Enrollment body Validation", () => {
-//       const roles = [
-//         {
-//           name: "admin",
-//           token: () => adminToken,
-//         },
-//         {
-//           name: "instructor",
-//           token: () => instructorToken,
-//         },
-//       ];
-//       const requiredFields = ["status", "student_id"];
+    describe("Enrollment body Validation", () => {
+      const roles = [
+        {
+          name: "admin",
+          token: () => adminToken,
+        },
+        {
+          name: "instructor",
+          token: () => instructorToken,
+        },
+      ];
+      const requiredFields = ["status", "student_id"];
 
-//       // Define all scenarios: missing, empty, invalid
-//       const scenarios = ["missing", "empty", "invalid"];
-//       roles.forEach((role) => {
-//         requiredFields.forEach((field) => {
-//           scenarios.forEach((scenario) => {
-//             let values = [];
+      // Define all scenarios: missing, empty, invalid
+      const scenarios = ["missing", "empty", "invalid"];
+      roles.forEach((role) => {
+        requiredFields.forEach((field) => {
+          scenarios.forEach((scenario) => {
+            let values = [];
 
-//             if (scenario === "missing") {
-//               values = [undefined]; // field will be deleted
-//             } else if (scenario === "empty") {
-//               values = [""]; // empty string
-//             } else if (scenario === "invalid") {
-//               values = commonInvalids; // invalid values
-//             }
+            if (scenario === "missing") {
+              values = [undefined]; // field will be deleted
+            } else if (scenario === "empty") {
+              values = [""]; // empty string
+            } else if (scenario === "invalid") {
+              values = commonInvalids; // invalid values
+            }
 
-//             values.forEach((value) => {
-//               it(`should return 400 if ${field} is ${scenario} (${role.name})${
-//                 scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
-//               }`, async () => {
-//                 const enrollment = { status: "rejected", student_id: "1" };
+            values.forEach((value) => {
+              it(`should return 400 if ${field} is ${scenario} (${role.name})${
+                scenario === "invalid" ? ` (${JSON.stringify(value)})` : ""
+              }`, async () => {
+                const enrollment = { status: "rejected", student_id: "1" };
 
-//                 if (scenario === "missing") delete enrollment[field];
-//                 else enrollment[field] = value;
+                if (scenario === "missing") delete enrollment[field];
+                else enrollment[field] = value;
 
-//                 const response = await request(app)
-//                   .put(`/course/${courseId}/enrollment`)
-//                   .set("Authorization", `Bearer ${role.token()}`)
-//                   .send(enrollment);
+                const response = await request(app)
+                  .put(`/course/${courseId}/enrollment`)
+                  .set("Authorization", `Bearer ${role.token()}`)
+                  .send(enrollment);
 
-//                 expect(response.status).toBe(400);
-//                 expect(response.body.errors[0]).toHaveProperty("message");
-//               });
-//             });
-//           });
-//         });
-//       });
-//     });
-//   });
-// });
+                expect(response.status).toBe(400);
+                expect(response.body.errors[0]).toHaveProperty("message");
+              });
+            });
+          });
+        });
+      });
+    });
+  });
+});
