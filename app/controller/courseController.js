@@ -1,16 +1,15 @@
 const courseService = require("../service/courseService");
 const userService = require("../service/userService");
 async function createCourse(req, res) {
-  let instructor_id;
-  if (req.user.role == "instructor") {
-    instructor_id = req.user.id;
-  } else {
-    instructor_id = req.body.instructor_id;
+  let body = req.body;
+  try {
+    if (req.user.role == "instructor") {
+      body["instructor_id"] = req.user.id;
+    }
+  } catch {}
 
-    await userService.assertValidInstructorId(instructor_id);
-  }
   // Create course
-  const course = await courseService.createCourse(instructor_id, req.body);
+  const course = await courseService.createCourse(body);
   res.status(201).json({ course });
 }
 

@@ -13,6 +13,11 @@ function handleDbError(error) {
         status: 400,
         errors: parseError(error, "is violated contraints"),
       };
+    case "23503": // foreign key violation
+      return {
+        status: 404,
+        errors: parseForeignkeyError(error),
+      };
     case "23502": // not null
       return {
         status: 400,
@@ -53,6 +58,11 @@ function parseError(error, message) {
   const parts = error.constraint.split("_");
   const column = parts.slice(1, -1).join("_");
   return [{ property: `${column}`, message: `${column} ${message}` }];
+}
+function parseForeignkeyError(error) {
+  const match = error.detail.match(/Key \(([^)]+)\)=\(([^)]+)\)/);
+  const key = match[1];
+  return [{ property: `${key}`, message: `${key} is not found` }];
 }
 
 module.exports = handleDbError;

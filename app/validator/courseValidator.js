@@ -13,6 +13,23 @@ function checkTime(time) {
 
 const createCourseSchema = z
   .object({
+    instructor_id: z
+      .string({
+        error: (issue) =>
+          issue.input === undefined
+            ? "instructor_id is required"
+            : "instructor_id must be string",
+      })
+      .regex(/^[1-9]\d{0,9}$/, {
+        error: (issue) =>
+          issue.input.length < 1
+            ? "instructor_id must be at least 1 digit"
+            : issue.input.length > 10
+              ? "instructor_id must be at maximum 10 digits"
+              : issue.input[0] == "0"
+                ? "instructor_id must be a positive integer"
+                : "instructor_id must be only digits",
+      }),
     title: z
       .string({
         error: (issue) =>

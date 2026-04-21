@@ -45,7 +45,7 @@ async function loginUser(user) {
     (await redis.get(`user_${foundUser.id}_tokenVersion`)) || "0";
   // Generate Token
   const token = generateToken({
-    id: foundUser.id,
+    id: `${foundUser.id}`,
     role: foundUser.role,
     tokenVersion: userTokenVersion,
   });
@@ -64,4 +64,5 @@ async function logoutUser(user) {
   );
   return;
 }
+
 module.exports = { loginUser, authenticateUser, logoutUser };

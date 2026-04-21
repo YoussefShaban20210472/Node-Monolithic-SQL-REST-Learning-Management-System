@@ -3,12 +3,14 @@ const {
   createUpdateCourseSchema,
 } = require("../validator/courseValidator");
 const courseModel = require("../model/courseModel");
-async function createCourse(instructor_id, course) {
+const userService = require("../service/userService");
+async function createCourse(body) {
   // Validate course
 
   // Schema Validation
-  const validatedCourse = createCourseSchema.parse(course);
-
+  const validatedCourse = createCourseSchema.parse(body);
+  const instructor_id = validatedCourse.instructor_id;
+  await userService.assertValidUserId("instructor", instructor_id);
   // Create course
   const createdCourse = await courseModel.createCourse(
     instructor_id,

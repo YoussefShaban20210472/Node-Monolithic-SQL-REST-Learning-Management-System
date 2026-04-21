@@ -86,13 +86,10 @@ async function updateUserById(id, user) {
   }
   return updatedUser;
 }
-async function assertValidInstructorId(id) {
-  if (!(typeof id === "string" && /^\d+$/.test(id))) {
-    throw { status: 400, message: "instructor_id must be interger string" };
-  }
+async function assertValidUserId(role, id) {
   const user = await findUserById(id);
-  if (user.role != "instructor") {
-    throw { status: 400, message: "instructor_id must be id of instructor" };
+  if (user.role != role) {
+    throw { status: 400, message: `${role}_id must be id of ${role}` };
   }
 }
 
@@ -102,5 +99,5 @@ module.exports = {
   findUserById,
   deleteUserById,
   updateUserById,
-  assertValidInstructorId,
+  assertValidUserId,
 };
