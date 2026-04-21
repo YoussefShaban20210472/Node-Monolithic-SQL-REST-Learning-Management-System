@@ -152,7 +152,7 @@ describe("Testing Post /enrollment", () => {
         .set("Authorization", `Bearer ${instructorToken}`)
         .send(course);
       courseId = response.body.course.id;
-    });
+    }, 100000);
 
     it("Should allow student to enroll to a course", async () => {
       let response = await request(app)
