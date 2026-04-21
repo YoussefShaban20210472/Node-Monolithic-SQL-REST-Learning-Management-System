@@ -1,6 +1,7 @@
 const app = require("../../app");
 const request = require("supertest");
 
+jest.setTimeout(10000); // 10 seconds
 function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
@@ -152,7 +153,7 @@ describe("Testing Post /enrollment", () => {
         .set("Authorization", `Bearer ${instructorToken}`)
         .send(course);
       courseId = response.body.course.id;
-    }, 100000);
+    });
 
     it("Should allow student to enroll to a course", async () => {
       let response = await request(app)
