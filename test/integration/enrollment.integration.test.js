@@ -160,6 +160,7 @@ describe("Testing Post /enrollment", () => {
         .post(`/course/${courseId}/enrollment`)
         .set("Authorization", `Bearer ${studentToken}`)
         .send();
+      console.log(studentToken, studentId, courseId);
       expect(response.status).toBe(201);
     });
 
@@ -168,6 +169,7 @@ describe("Testing Post /enrollment", () => {
         .post(`/course/${courseId}/enrollment`)
         .set("Authorization", `Bearer ${adminToken}`)
         .send({ student_id: `${studentId}` });
+      console.log(adminToken, studentId, courseId);
       expect(response.status).toBe(201);
     });
   });
