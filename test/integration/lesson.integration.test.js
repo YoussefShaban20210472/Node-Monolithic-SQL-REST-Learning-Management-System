@@ -1,6 +1,6 @@
 const app = require("../../app");
 const request = require("supertest");
-
+jest.setTimeout(10000);
 function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
@@ -132,7 +132,6 @@ describe("Testing Post /course/:course_id/lesson", () => {
           .post(`/course/${courseId}/lesson`)
           .set("Authorization", `Bearer ${role.token()}`)
           .send(lesson);
-        console.log(response.body);
         expect(response.status).toBe(201);
       });
     });

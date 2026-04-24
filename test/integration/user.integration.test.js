@@ -70,7 +70,6 @@ describe("Testing Post /user", () => {
         .set("Authorization", `Bearer ${token}`)
         .send(user);
       const createdUser = response.body.user;
-      console.log(createdUser);
       expect(response.status).toBe(201);
       expect(createdUser.first_name).toBe(user.first_name);
       expect(createdUser.last_name).toBe(user.last_name);
@@ -90,7 +89,6 @@ describe("Testing Post /user", () => {
         .post("/user")
         .set("Authorization", `Bearer ${token}`);
       const createdUser = response.body.user;
-      console.log(createdUser);
       expect(response.status).toBe(400);
       expect(response.body.errors[0]).toHaveProperty("message");
     });
@@ -163,7 +161,6 @@ describe("Testing Post /user", () => {
                 .post("/user")
                 .set("Authorization", `Bearer ${token}`)
                 .send(user);
-              if (response.status == 401) console.log(response.body);
               expect(response.status).toBe(400);
               expect(response.body.errors[0]).toHaveProperty("property", field);
               expect(response.body.errors[0]).toHaveProperty("message");
@@ -252,13 +249,13 @@ describe("Testing Get /user/all", () => {
     it("Should get a list of all existing users only if the caller was an admin", async () => {
       let response = await request(app).post("/user/login").send(adminUser);
       const token = response.body.token;
-      console.log(token);
+
       response = await request(app)
         .get("/user/all")
         .set("Authorization", `Bearer ${token}`)
         .send();
       const users = response.body.users;
-      console.log(users);
+
       const user = users[0];
       expect(response.status).toBe(200);
       expect(Array.isArray(users)).toBe(true);

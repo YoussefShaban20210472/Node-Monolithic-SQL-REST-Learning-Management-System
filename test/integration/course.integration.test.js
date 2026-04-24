@@ -119,8 +119,6 @@ describe("Testing Post /course", () => {
         .set("Authorization", `Bearer ${instructorToken}`)
         .send(course);
       // const createdCourse = response.body.course;
-      console.log(response.body);
-      console.log(response.body, response.status, instructorToken);
       expect(response.status).toBe(201);
     });
     it("Should allow admin to create a new course with given an instructor id", async () => {
@@ -131,8 +129,6 @@ describe("Testing Post /course", () => {
         .set("Authorization", `Bearer ${adminToken}`)
         .send(course);
       // const createdCourse = response.body.course;
-      console.log(response.body, instructorId, response.status, adminToken);
-      // console.log(response.status);
       expect(response.status).toBe(201);
     });
   });
