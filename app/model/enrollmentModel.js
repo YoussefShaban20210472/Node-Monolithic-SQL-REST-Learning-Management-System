@@ -51,6 +51,30 @@ async function getEnrollment(course_id, student_id) {
     client.release();
   }
 }
+async function getAllEnrollments(course_id) {
+  const client = await db.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const query = `
+     select * FROM Course_Enrollments WHERE course_id = $1;
+    `;
+
+    const values = [course_id];
+
+    const result = await client.query(query, values);
+
+    await client.query("COMMIT");
+    return result.rows;
+  } catch (error) {
+    await client.query("ROLLBACK");
+
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 async function unEnroll(course_id, student_id) {
   const client = await db.connect();
@@ -100,6 +124,7 @@ async function updateEnrollment(status, course_id, student_id) {
 module.exports = {
   enroll,
   getEnrollment,
+  getAllEnrollments,
   unEnroll,
   updateEnrollment,
 };

@@ -18,13 +18,20 @@ function createUser(role = "admin") {
   return user;
 }
 
+function createDateTime(year, month, day, hours = 0, minutes = 0, seconds = 0) {
+  // ⚠️ month is 0-based in JS (0 = Jan, 11 = Dec)
+  return new Date(
+    Date.UTC(year, month - 1, day, hours, minutes, seconds),
+  ).toISOString();
+}
+
 function createCourse() {
   const course = {
     title: generateRandomString(50),
     description: generateRandomString(200),
     short_description: generateRandomString(100),
-    start_date: new Date(2026, 5, 20).toISOString(),
-    end_date: new Date(2026, 8, 20).toISOString(),
+    start_date: createDateTime(2026, 5, 20),
+    end_date: createDateTime(2026, 8, 20),
     tag: [
       generateRandomString(10),
       generateRandomString(10),

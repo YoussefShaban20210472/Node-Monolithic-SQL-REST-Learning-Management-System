@@ -12,6 +12,12 @@ async function unEnroll(req, res) {
   res.status(200).json({ message: "Enrollment request deleted successfully" });
 }
 
+async function getAllEnrollments(req, res) {
+  const course_id = req.params.course_id;
+  const enrollments = await enrollmentService.getAllEnrollments(course_id);
+  res.status(200).json({ enrollments });
+}
+
 async function updateEnrollment(req, res) {
   const { course_id, body } = extract(req);
   const _ = await enrollmentService.updateEnrollment(body, course_id);
@@ -34,4 +40,5 @@ module.exports = {
   enroll,
   unEnroll,
   updateEnrollment,
+  getAllEnrollments,
 };

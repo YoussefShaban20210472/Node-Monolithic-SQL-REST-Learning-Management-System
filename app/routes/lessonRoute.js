@@ -1,45 +1,58 @@
 // userRoutes.js
 const express = require("express");
-const enrollmentController = require("../controller/enrollmentController");
+const lessonController = require("../controller/lessonController");
 const authorizeAdminStudentMiddleware = require("../middleware/authorizeAdminStudentMiddleware");
 const authorizeAdminInstructorMiddleware = require("../middleware/authorizeAdminInstructorMiddleware");
 const authorizeInstructorOwnershipMiddleware = require("../middleware/authorizeInstructorOwnershipMiddleware");
 const ensureCourseExistsMiddleware = require("../middleware/ensureCourseExistsMiddleware");
 const ensureJsonBodyRequestMiddleware = require("../middleware/ensureJsonBodyRequestMiddleware");
+const ensureUserInCourseMiddleware = require("../middleware/ensureUserInCourseMiddleware");
 const idFormatMiddleware = require("../middleware/idFormatMiddleware");
 const router = express.Router();
 
 router.post(
-  "/course/:course_id/enrollment",
-  idFormatMiddleware,
-  authorizeAdminStudentMiddleware,
-  ensureCourseExistsMiddleware,
-  enrollmentController.enroll,
-);
-
-router.get(
-  "/course/:course_id/enrollment/all",
+  "/course/:course_id/lesson",
   idFormatMiddleware,
   authorizeAdminInstructorMiddleware,
-  ensureCourseExistsMiddleware,
   authorizeInstructorOwnershipMiddleware,
-  enrollmentController.getAllEnrollments,
-);
-
-router.delete(
-  "/course/:course_id/enrollment",
-  idFormatMiddleware,
-  authorizeAdminStudentMiddleware,
-  ensureCourseExistsMiddleware,
-  enrollmentController.unEnroll,
+  lessonController.createLesson,
 );
 
 router.put(
-  "/course/:course_id/enrollment",
+  "/course/:course_id/lesson/:lesson_id",
   idFormatMiddleware,
   authorizeAdminInstructorMiddleware,
   authorizeInstructorOwnershipMiddleware,
-  ensureJsonBodyRequestMiddleware,
-  enrollmentController.updateEnrollment,
+  lessonController.updateLessonById,
 );
+
+router.get(
+  "/course/:course_id/lesson/all",
+  idFormatMiddleware,
+  ensureUserInCourseMiddleware,
+  lessonController.getAllLessons,
+);
+router.delete(
+  "/course/:course_id/lesson/:lesson_id",
+  idFormatMiddleware,
+  authorizeAdminInstructorMiddleware,
+  authorizeInstructorOwnershipMiddleware,
+  lessonController.deleteLesson,
+);
+
+router.get(
+  "/course/:course_id/lesson/:lesson_id",
+  idFormatMiddleware,
+  ensureUserInCourseMiddleware,
+  lessonController.getLesson,
+);
+
+router.get(
+  "/course/:course_id/lesson/:lesson_id/otp",
+  idFormatMiddleware,
+  authorizeAdminInstructorMiddleware,
+  authorizeInstructorOwnershipMiddleware,
+  lessonController.getLessonOTP,
+);
+
 module.exports = router;

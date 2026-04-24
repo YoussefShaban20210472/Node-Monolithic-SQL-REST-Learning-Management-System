@@ -1,6 +1,6 @@
 const app = require("../../app");
 const request = require("supertest");
-jest.setTimeout(10000); // 10 seconds
+
 function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
@@ -18,13 +18,20 @@ function createUser(role = "admin") {
   return user;
 }
 
+function createDateTime(year, month, day, hours = 0, minutes = 0, seconds = 0) {
+  // ⚠️ month is 0-based in JS (0 = Jan, 11 = Dec)
+  return new Date(
+    Date.UTC(year, month - 1, day, hours, minutes, seconds),
+  ).toISOString();
+}
+
 function createCourse() {
   const course = {
     title: generateRandomString(50),
     description: generateRandomString(200),
     short_description: generateRandomString(100),
-    start_date: new Date(2026, 5, 20).toISOString(),
-    end_date: new Date(2026, 8, 20).toISOString(),
+    start_date: createDateTime(2026, 5, 20),
+    end_date: createDateTime(2026, 8, 20),
     tag: [
       generateRandomString(10),
       generateRandomString(10),
@@ -935,6 +942,197 @@ describe("Testing Put /enrollment", () => {
               });
             });
           });
+        });
+      });
+    });
+  });
+});
+
+describe("Testing Get /course/:course_id/enrollment/all", () => {
+  let adminToken, instructorToken, studentToken;
+  let courseId;
+
+  beforeAll(async () => {
+    // login users
+    adminToken = await getToken(adminUser);
+    instructorToken = await getToken(instructorUser);
+
+    studentToken = await createAndLoginUser(createUser("student"));
+    let response = await request(app)
+      .get(`/user/me`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send();
+    expect(response.status).toBe(200);
+    let studentId = response.body.user.id;
+
+    const course = createCourse();
+
+    response = await request(app)
+      .post("/course")
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(course);
+    expect(response.status).toBe(201);
+    courseId = response.body.course.id;
+
+    response = await request(app)
+      .post(`/course/${courseId}/enrollment`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send();
+    expect(response.status).toBe(201);
+    response = await request(app)
+      .put(`/course/${courseId}/enrollment`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send({ student_id: `${studentId}`, status: "accepted" });
+    expect(response.status).toBe(200);
+  });
+
+  const roles = [
+    { name: "admin", token: () => adminToken },
+    { name: "instructor", token: () => instructorToken },
+  ];
+  // ✅ Positive
+  describe("Positive Testing", () => {
+    roles.forEach((role) => {
+      it(`should allow ${role.name} to get all enrollments of given course id`, async () => {
+        const res = await request(app)
+          .get(`/course/${courseId}/enrollment/all`)
+          .set("Authorization", `Bearer ${role.token()}`);
+
+        expect(res.status).toBe(200);
+        expect(res.body.enrollments.length).toBeGreaterThan(0);
+      });
+    });
+  });
+  describe("Negative Testing", () => {
+    // ❌ Authorization scenarios
+    describe("Should return 404 if the course is not found", () => {
+      let courseId = "9999999";
+      roles.forEach((role) => {
+        it(`Should return 404 if the course is not found (${role.name})`, async () => {
+          let response = await request(app)
+            .get(`/course/${courseId}/enrollment/all`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send();
+          expect(response.status).toBe(404);
+        });
+      });
+    });
+
+    describe("Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      let unauthorizedInstructorToken, unauthorizedStudentToken;
+      beforeEach(async () => {
+        unauthorizedInstructorToken = await createAndLoginUser(
+          createUser("instructor"),
+        );
+        unauthorizedStudentToken = await createAndLoginUser(
+          createUser("student"),
+        );
+      });
+      const scenarios = [
+        {
+          name: "missing",
+          setHeader: (req) => req, // do nothing
+        },
+        {
+          name: "empty",
+          setHeader: (req) => req.set("Authorization", ""),
+        },
+        {
+          name: "invalid",
+          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
+        },
+        {
+          name: "Unauthorized",
+          values: [
+            {
+              name: "authorized student user",
+              token: () => studentToken,
+            },
+            {
+              name: "unauthorized student user",
+              token: () => unauthorizedStudentToken,
+            },
+            {
+              name: "instructor user",
+              token: () => unauthorizedInstructorToken,
+            },
+          ],
+        },
+      ];
+      scenarios.forEach((scenario) => {
+        if (scenario.name === "invalid") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is invalid (${value})`, async () => {
+              const response = await request(app)
+                .get(`/course/${courseId}/enrollment/all`)
+                .set("Authorization", value)
+                .send();
+
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else if (scenario.name === "Unauthorized") {
+          scenario.values.forEach((value) => {
+            it(`should return 401 if Authorization is unauthorized as (${value.name})`, async () => {
+              response = await request(app)
+                .get(`/course/${courseId}/enrollment/all`)
+                .set("Authorization", `Bearer ${value.token()}`)
+                .send();
+
+              expect(response.status).toBe(401);
+              expect(response.body.errors[0]).toHaveProperty("message");
+            });
+          });
+        } else {
+          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
+            let req = request(app)
+              .get(`/course/${courseId}/enrollment/all`)
+              .send();
+            req = scenario.setHeader(req);
+
+            const response = await req;
+
+            expect(response.status).toBe(401);
+            expect(response.body.errors[0]).toHaveProperty("message");
+          });
+        }
+      });
+    });
+
+    describe("should return 400 if the id of the course is invalid", () => {
+      let courseId = "invalid-id";
+      roles.forEach((role) => {
+        it(`Should return 400 if the id of the course is invalid (${role.name})`, async () => {
+          let response = await request(app)
+            .get(`/course/${courseId}/enrollment/all`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send();
+          expect(response.status).toBe(400);
+        });
+      });
+    });
+
+    describe("Should return [] if the enrollments are empty", () => {
+      let courseId;
+
+      beforeAll(async () => {
+        const course = createCourse();
+        let response = await request(app)
+          .post("/course")
+          .set("Authorization", `Bearer ${instructorToken}`)
+          .send(course);
+        expect(response.status).toBe(201);
+        courseId = response.body.course.id;
+      });
+      roles.forEach((role) => {
+        it(`Should return [] if the enrollments are empty (${role.name})`, async () => {
+          let response = await request(app)
+            .get(`/course/${courseId}/enrollment/all`)
+            .set("Authorization", `Bearer ${role.token()}`)
+            .send();
+          expect(response.status).toBe(200);
+          expect(response.body.enrollments.length).toBe(0);
         });
       });
     });

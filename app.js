@@ -5,6 +5,7 @@ const authMiddleware = require("./app/middleware/authMiddleware");
 const userRoute = require("./app/routes/userRoute");
 const courseRoute = require("./app/routes/courseRoute");
 const enrollmentRoute = require("./app/routes/enrollmentRoute");
+const lessonRoute = require("./app/routes/lessonRoute");
 const loginRoute = require("./app/routes/loginRoute");
 const logoutRoute = require("./app/routes/logoutRoute");
 app.use(express.json());
@@ -17,6 +18,7 @@ app.use(authMiddleware);
 // Protected Routes
 app.use(logoutRoute);
 
+app.use(lessonRoute);
 app.use(enrollmentRoute);
 app.use(courseRoute);
 app.use(userRoute);

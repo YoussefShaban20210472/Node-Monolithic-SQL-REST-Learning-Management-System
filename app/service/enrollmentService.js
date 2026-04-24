@@ -47,6 +47,22 @@ async function updateEnrollment(body, course_id) {
   return enrollment;
 }
 
+async function getEnrollment(body, course_id) {
+  const { _, student_id } = await validateAndEnsureStudentExists(
+    createEnrollmentSchema,
+    body,
+  );
+
+  let enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
+  if (enrollment == null) {
+    throw { status: 404, message: "Enrollment Not Found" };
+  }
+  return enrollment;
+}
+async function getAllEnrollments(course_id) {
+  let enrollments = await enrollmentModel.getAllEnrollments(course_id);
+  return enrollments;
+}
 async function validateAndEnsureStudentExists(validator, body) {
   const validatedEnrollment = await validator.parse(body);
   const student_id = validatedEnrollment.student_id;
@@ -57,4 +73,6 @@ module.exports = {
   enroll,
   unEnroll,
   updateEnrollment,
+  getEnrollment,
+  getAllEnrollments,
 };
