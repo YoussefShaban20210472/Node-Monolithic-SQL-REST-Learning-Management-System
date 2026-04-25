@@ -6,7 +6,7 @@ const userRoute = require("./app/routes/userRoute");
 const courseRoute = require("./app/routes/courseRoute");
 const enrollmentRoute = require("./app/routes/enrollmentRoute");
 const lessonRoute = require("./app/routes/lessonRoute");
-const attendanceRoute = require("./App/Routes/attendanceRoute");
+const attendanceRoute = require("./app/routes/attendanceRoute");
 const loginRoute = require("./app/routes/loginRoute");
 const logoutRoute = require("./app/routes/logoutRoute");
 app.use(express.json());
