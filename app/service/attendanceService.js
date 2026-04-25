@@ -3,10 +3,10 @@ const {
   createGetAttendanceSchema,
 } = require("../validator/attendanceValidator");
 
-const attendanceModel = require("../Model/attendanceModel");
+const attendanceModel = require("../model/attendanceModel");
 const userService = require("./userService");
 const lessonService = require("./lessonService");
-const redis = require("../Cache/redis");
+const redis = require("../cache/redis");
 
 async function attend(course_id, lesson_id, body) {
   const validatedAttendance = createAttendanceSchema.parse(body);
