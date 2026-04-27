@@ -7,6 +7,7 @@ const courseRoute = require("./app/routes/courseRoute");
 const enrollmentRoute = require("./app/routes/enrollmentRoute");
 const lessonRoute = require("./app/routes/lessonRoute");
 const attendanceRoute = require("./app/routes/attendanceRoute");
+const mediaFileRoute = require("./app/routes/mediaFileRoute");
 const loginRoute = require("./app/routes/loginRoute");
 const logoutRoute = require("./app/routes/logoutRoute");
 app.use(express.json());
@@ -20,6 +21,7 @@ app.use(authMiddleware);
 app.use(logoutRoute);
 
 app.use(lessonRoute);
+app.use(mediaFileRoute);
 app.use(enrollmentRoute);
 app.use(attendanceRoute);
 app.use(courseRoute);
