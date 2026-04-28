@@ -39,7 +39,12 @@ const submissionStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     let course_id = req.params.course_id;
     let assignment_id = req.params.assignment_id;
-    let student_id = req.user.id;
+    let student_id;
+    if (req.user.role == "student") {
+      student_id = req.user.id;
+    } else {
+      student_id = req.body.student_id;
+    }
     const dir = path.join(
       DIR,
       `${course_id}`,
