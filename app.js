@@ -6,6 +6,7 @@ const userRoute = require("./app/routes/userRoute");
 const courseRoute = require("./app/routes/courseRoute");
 const enrollmentRoute = require("./app/routes/enrollmentRoute");
 const lessonRoute = require("./app/routes/lessonRoute");
+const assignmentRoute = require("./app/routes/assignmentRoute");
 const attendanceRoute = require("./app/routes/attendanceRoute");
 const mediaFileRoute = require("./app/routes/mediaFileRoute");
 const loginRoute = require("./app/routes/loginRoute");
@@ -21,6 +22,7 @@ app.use(authMiddleware);
 app.use(logoutRoute);
 
 app.use(lessonRoute);
+app.use(assignmentRoute);
 app.use(mediaFileRoute);
 app.use(enrollmentRoute);
 app.use(attendanceRoute);
