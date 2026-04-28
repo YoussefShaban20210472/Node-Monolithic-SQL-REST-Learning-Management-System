@@ -2,7 +2,7 @@ const mediaFileModel = require("../model/mediaFileModel");
 const fs = require("fs/promises");
 const path = require("path");
 const { createMediaFileSchema } = require("../validator/mediaFileValidator");
-const DIR = path.join(__dirname, "..", "..", "Storage", "uploads", "courses");
+const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 async function createMediaFiles(course_id, files) {
   let filenames = [];
   if (!files || files.length === 0) {

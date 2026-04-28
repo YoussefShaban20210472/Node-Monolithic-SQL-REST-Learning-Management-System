@@ -1,7 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const DIR = path.join(__dirname, "..", "..", "Storage", "uploads", "courses");
+const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 const courseStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     let course_id = req.params.course_id;

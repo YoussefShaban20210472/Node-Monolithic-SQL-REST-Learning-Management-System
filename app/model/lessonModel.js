@@ -67,7 +67,7 @@ async function getLesson(course_id, lesson_id) {
     await client.query("BEGIN");
 
     const query = `
-      SELECT id,title, description, otp, start_date, end_date FROM Lessons WHERE course_id = $1 AND id = $2
+      SELECT id,title, description, start_date, end_date FROM Lessons WHERE course_id = $1 AND id = $2
     `;
 
     const values = [course_id, lesson_id];
@@ -112,7 +112,7 @@ async function getAllLessons(course_id) {
     await client.query("BEGIN");
 
     const query = `
-      SELECT id,title, description, otp, start_date, end_date FROM Lessons WHERE course_id = $1
+      SELECT id,title, description, start_date, end_date FROM Lessons WHERE course_id = $1
     `;
 
     const values = [course_id];
