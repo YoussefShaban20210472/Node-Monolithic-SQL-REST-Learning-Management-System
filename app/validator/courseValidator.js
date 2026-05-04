@@ -101,23 +101,18 @@ const createCourseSchema = z
                 ? "tag element is required"
                 : "tag element must be string",
           })
-          .regex(
-            /^[A-Za-z]{1,255}$/,
-            {
-              error: (issue) =>
-                issue.input.length < 1
-                  ? "tag element must be at least 5 letters"
-                  : issue.input.length > 255
-                    ? "tag element must be at maximum 255 letters"
-                    : "tag element must be only letters",
-            },
-            {
-              error: (issue) =>
-                issue.input === undefined
-                  ? "tag is required"
-                  : "tag element must be array",
-            },
-          ),
+          .regex(/^[A-Za-z]{1,255}$/, {
+            error: (issue) =>
+              issue.input.length < 1
+                ? "tag element must be at least 5 letters"
+                : issue.input.length > 255
+                  ? "tag element must be at maximum 255 letters"
+                  : "tag element must be only letters",
+          }),
+        {
+          error: (issue) =>
+            issue.input === undefined ? "tag is required" : "tag must be array",
+        },
       )
       .min(1, "You have to add at least one tag"),
     category: z
@@ -129,23 +124,20 @@ const createCourseSchema = z
                 ? "category element is required"
                 : "category element must be string",
           })
-          .regex(
-            /^[A-Za-z]{1,255}$/,
-            {
-              error: (issue) =>
-                issue.input.length < 1
-                  ? "category element must be at least 5 letters"
-                  : issue.input.length > 255
-                    ? "category element must be at maximum 255 letters"
-                    : "category element must be only letters",
-            },
-            {
-              error: (issue) =>
-                issue.input === undefined
-                  ? "category is required"
-                  : "category element must be array",
-            },
-          ),
+          .regex(/^[A-Za-z]{1,255}$/, {
+            error: (issue) =>
+              issue.input.length < 1
+                ? "category element must be at least 5 letters"
+                : issue.input.length > 255
+                  ? "category element must be at maximum 255 letters"
+                  : "category element must be only letters",
+          }),
+        {
+          error: (issue) =>
+            issue.input === undefined
+              ? "category is required"
+              : "category must be array",
+        },
       )
       .min(1, "You have to add at least one category"),
   })
@@ -254,23 +246,20 @@ const createUpdateCourseSchema = z
                 ? "tag element is required"
                 : "tag element must be string",
           })
-          .regex(
-            /^[A-Za-z]{1,255}$/,
-            {
-              error: (issue) =>
-                issue.input.length < 1
-                  ? "tag element must be at least 5 letters"
-                  : issue.input.length > 255
-                    ? "tag element must be at maximum 255 letters"
-                    : "tag element must be only letters",
-            },
-            {
-              error: (issue) =>
-                issue.input === undefined
-                  ? "tag is required"
-                  : "tag element must be array",
-            },
-          ),
+          .regex(/^[A-Za-z]{1,255}$/, {
+            error: (issue) =>
+              issue.input.length < 1
+                ? "tag element must be at least 5 letters"
+                : issue.input.length > 255
+                  ? "tag element must be at maximum 255 letters"
+                  : "tag element must be only letters",
+          }),
+        {
+          error: (issue) =>
+            issue.input === undefined
+              ? "tag is required"
+              : "tag element must be array",
+        },
       )
       .min(1, "You have to add at least one tag")
       .optional(),
@@ -283,23 +272,20 @@ const createUpdateCourseSchema = z
                 ? "category element is required"
                 : "category element must be string",
           })
-          .regex(
-            /^[A-Za-z]{1,255}$/,
-            {
-              error: (issue) =>
-                issue.input.length < 1
-                  ? "category element must be at least 5 letters"
-                  : issue.input.length > 255
-                    ? "category element must be at maximum 255 letters"
-                    : "category element must be only letters",
-            },
-            {
-              error: (issue) =>
-                issue.input === undefined
-                  ? "category is required"
-                  : "category element must be array",
-            },
-          ),
+          .regex(/^[A-Za-z]{1,255}$/, {
+            error: (issue) =>
+              issue.input.length < 1
+                ? "category element must be at least 5 letters"
+                : issue.input.length > 255
+                  ? "category element must be at maximum 255 letters"
+                  : "category element must be only letters",
+          }),
+        {
+          error: (issue) =>
+            issue.input === undefined
+              ? "category is required"
+              : "category element must be array",
+        },
       )
       .min(1, "You have to add at least one category")
       .optional(),
