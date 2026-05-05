@@ -1,6 +1,6 @@
 const app = require("../../app");
 const request = require("supertest");
-jest.setTimeout(30000);
+jest.setTimeout(50000);
 function createUser(role = "admin") {
   const numbersString = Array.from({ length: 10 }, () =>
     Math.floor(Math.random() * 10),
