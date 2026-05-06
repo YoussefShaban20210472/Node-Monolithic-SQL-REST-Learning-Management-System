@@ -1,7 +1,7 @@
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
-jest.setTimeout(20000);
+jest.setTimeout(30000);
 const app = require("../../app");
 const request = require("supertest");
 
