@@ -1,4 +1,5 @@
 const assignmentMediaFileService = require("../service/assignmentMediaFileService");
+const notificationService = require("../service/notificationService");
 async function createAssignmentMediaFiles(req, res) {
   const course_id = req.params.course_id;
   const assignment_id = req.params.assignment_id;
@@ -8,6 +9,12 @@ async function createAssignmentMediaFiles(req, res) {
     assignment_id,
     files,
   );
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "New assignment media files have been released",
+  );
+
   res.status(201).json({ message: "Files uploaded successfully" });
 }
 async function deleteAssignmentMediaFile(req, res) {
@@ -19,6 +26,12 @@ async function deleteAssignmentMediaFile(req, res) {
     assignment_id,
     filename,
   );
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "New course media files have been deleted",
+  );
+
   res.status(200).json({ message: "File deleted successfully" });
 }
 async function getAssignmentMediaFile(req, res) {

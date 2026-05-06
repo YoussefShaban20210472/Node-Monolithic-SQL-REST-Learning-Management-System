@@ -12,6 +12,7 @@ const mediaFileRoute = require("./app/routes/mediaFileRoute");
 const assignmentMediaFileRoute = require("./app/routes/assignmentMediaFileRoute");
 const submissionMediaFileRoute = require("./app/routes/submissionMediaFileRoute");
 const quizRoute = require("./app/routes/quizRoute");
+const notificationRoute = require("./app/routes/notificationRoute");
 const quizAttemptRoute = require("./app/routes/quizAttemptRoute");
 const questionBankRoute = require("./app/routes/questionBankRoute");
 const loginRoute = require("./app/routes/loginRoute");
@@ -26,6 +27,7 @@ app.use(authMiddleware);
 // Protected Routes
 app.use(logoutRoute);
 
+app.use(notificationRoute);
 app.use(lessonRoute);
 app.use(assignmentRoute);
 app.use(mediaFileRoute);

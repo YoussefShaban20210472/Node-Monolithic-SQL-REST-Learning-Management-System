@@ -1,5 +1,6 @@
 const courseService = require("../service/courseService");
 const userService = require("../service/userService");
+const notificationService = require("../service/notificationService");
 async function createCourse(req, res) {
   let body = req.body;
   try {
@@ -34,6 +35,12 @@ async function getAllFullCourses(req, res) {
 async function updateCourseById(req, res) {
   let course_id = req.params.course_id;
   const _ = await courseService.updateCourseById(course_id, req.body);
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "The course has been updated",
+  );
+
   res.status(200).json({ message: "Course updated successfully" });
 }
 

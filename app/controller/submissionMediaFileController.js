@@ -1,4 +1,5 @@
 const submissionMediaFileService = require("../service/submissionMediaFileService");
+const notificationService = require("../service/notificationService");
 async function createSubmissionMediaFiles(req, res) {
   const course_id = req.params.course_id;
   const assignment_id = req.params.assignment_id;
@@ -53,6 +54,13 @@ async function updateSubmissionScore(req, res) {
     submission_id,
     body,
   );
+
+  await notificationService.notifyStudentBySubmissionId(
+    course_id,
+    submission_id,
+    "The assignment submission grade have been scored",
+  );
+
   res.status(200).json({ submission });
 }
 async function getSubmissionMediaFile(req, res) {

@@ -1,15 +1,28 @@
 const lessonService = require("../service/lessonService");
 const userService = require("../service/userService");
+const notificationService = require("../service/notificationService");
 async function createLesson(req, res) {
   const course_id = req.params.course_id;
   const body = req.body;
   const lesson = await lessonService.createLesson(course_id, body);
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "A new lesson has been released",
+  );
+
   res.status(201).json({ lesson });
 }
 async function deleteLesson(req, res) {
   const course_id = req.params.course_id;
   const lesson_id = req.params.lesson_id;
   const _ = await lessonService.deleteLesson(course_id, lesson_id);
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "The lesson has been deleted",
+  );
+
   res.status(200).json({ message: "lesson deleted successfully" });
 }
 async function getLesson(req, res) {
@@ -37,6 +50,12 @@ async function updateLessonById(req, res) {
   const body = req.body;
 
   const _ = await lessonService.updateLessonById(course_id, lesson_id, body);
+
+  await notificationService.notifyAllEnrolledStudents(
+    course_id,
+    "The lesson has been updated",
+  );
+
   res.status(200).json({ message: "lesson updated successfully" });
 }
 module.exports = {
