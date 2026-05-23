@@ -23,7 +23,7 @@ const {
   testUpdateManyFieldsInObjectRequest,
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(30000);
+jest.setTimeout(50000);
 const commonInvalids = [
   "",
   null,

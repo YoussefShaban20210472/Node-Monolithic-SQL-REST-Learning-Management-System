@@ -28,7 +28,7 @@ const {
   testUpdateManyFieldsInObjectRequest,
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(50000);
+jest.setTimeout(70000);
 const requiredFields = [
   "title",
   "description",

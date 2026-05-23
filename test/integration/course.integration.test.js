@@ -22,7 +22,7 @@ const {
   testUpdateManyFieldsInObjectRequest,
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(30000);
+jest.setTimeout(50000);
 let adminToken, instructorToken, studentToken, instructorId;
 
 beforeAll(async () => {

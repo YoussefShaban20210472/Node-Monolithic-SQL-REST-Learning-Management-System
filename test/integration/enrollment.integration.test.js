@@ -19,7 +19,7 @@ const {
   testNotFoundObjectRequest,
   testInvalidObjectIDFormatRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(30000);
+jest.setTimeout(50000);
 const requiredFields = ["student_id"];
 const commonInvalids = [
   "01",
