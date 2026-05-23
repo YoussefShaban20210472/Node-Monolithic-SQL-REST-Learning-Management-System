@@ -1,8 +1,5 @@
-const {
-  createQuizSchema,
-  createUpdateQuizSchema,
-  assertValidTimeAndDuration,
-} = require("../validator/quizValidator");
+const { quizSchema, updateQuizSchema } = require("../validator/quizValidator");
+const { assertValidTimeAndDuration } = require("../validator/validator");
 const quizModel = require("../model/quizModel");
 const questionBankModel = require("../model/questionBankModel");
 const courseService = require("./courseService");
@@ -20,9 +17,9 @@ async function assertQuestionExist(course_id, questions_ids) {
 }
 
 async function createQuiz(course_id, body) {
-  const validatedQuiz = await createQuizSchema.parse(body);
+  const validatedQuiz = await quizSchema.parse(body);
   const course = await courseService.getCourseById(course_id);
-  await assertValidTimeAndDuration(course, validatedQuiz);
+  await assertValidTimeAndDuration(course, validatedQuiz, "Quiz");
   await assertQuestionExist(course_id, validatedQuiz.question);
   const quiz = await quizModel.createQuiz(course_id, validatedQuiz);
   return quiz;
@@ -50,7 +47,7 @@ async function getAllQuizzes(course_id) {
 }
 
 async function updateQuizById(course_id, quiz_id, quiz) {
-  const validatedQuiz = createUpdateQuizSchema.parse(quiz);
+  const validatedQuiz = updateQuizSchema.parse(quiz);
 
   let safeQuiz = {};
   const safeFields = [
@@ -83,7 +80,7 @@ async function updateQuizById(course_id, quiz_id, quiz) {
     validatedQuiz.end_date = oldQuiz.end_date;
   }
 
-  assertValidTimeAndDuration(course, validatedQuiz);
+  assertValidTimeAndDuration(course, validatedQuiz, "Quiz");
   delete safeQuiz.question;
   const updatedQuiz = await quizModel.updateQuizById(
     course_id,

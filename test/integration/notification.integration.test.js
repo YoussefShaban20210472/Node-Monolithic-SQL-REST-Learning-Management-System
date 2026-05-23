@@ -1,218 +1,328 @@
-const app = require("../../app");
-const request = require("supertest");
+const {
+  app,
+  request,
+  createUser,
+  createCourse,
+  createLesson,
+  createAssignment,
+  createQuiz,
+  createDummyFile,
+  generateRandomString,
+  adminUser,
+  commonInvalids,
+  createAndLoginUser,
+  getToken,
+  addQuestionsAndGetIDs,
+} = require("../utils/testingUtils");
+const {
+  testInvalidBodyRequest,
+  testInvalidObjectCreationRequest,
+  testInvalidObjectUpdateRequest,
+  testInvalidAuthenticationAndAuthorizationRequest,
+  testNotFoundObjectRequest,
+  testInvalidObjectIDFormatRequest,
+  testUpdateOneFieldInObjectRequest,
+  testUpdateManyFieldsInObjectRequest,
+  testInvalidObjectDuriationRequest,
+} = require("../utils/preMadeTests");
+const requiredFields = ["user_id", "status"];
 jest.setTimeout(90000);
-function createUser(role = "admin") {
-  const numbersString = Array.from({ length: 10 }, () =>
-    Math.floor(Math.random() * 10),
-  ).join("");
-
-  const user = {
-    first_name: "John",
-    last_name: "Doe",
-    email: `john@a${numbersString}z.com`,
-    password: "Password@123",
-    phone_number: numbersString,
-    address: "253 N. Cherry St.",
-    role: role,
-  };
-  return user;
+let adminToken;
+beforeAll(async () => {
+  adminToken = await getToken(adminUser);
+});
+async function TestEmptyNotification(user_id, status) {
+  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
+    let response = await request(app)
+      .get(`/notification`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ user_id: `${user_id()}`, status });
+    expect(response.status).toBe(200);
+    expect(response.body.notifications.length).toBe(0);
+  });
 }
-
-function createCourse() {
-  const course = {
-    title: generateRandomString(50),
-    description: generateRandomString(200),
-    short_description: generateRandomString(100),
-    start_date: createDateTime(2026, 5, 20),
-    end_date: createDateTime(2026, 8, 20),
-    tag: [
-      generateRandomString(10),
-      generateRandomString(10),
-      generateRandomString(10),
-    ],
-    category: [
-      generateRandomString(10),
-      generateRandomString(10),
-      generateRandomString(10),
-    ],
-  };
-  return course;
-}
-function createLesson() {
-  let lesson = {
-    title: generateRandomString(50),
-    description: generateRandomString(200),
-    start_date: createDateTime(2026, 6, 20),
-    end_date: createDateTime(2026, 7, 20),
-  };
-  return lesson;
-}
-function createAssignment() {
-  let assignment = {
-    title: generateRandomString(50),
-    description: generateRandomString(200),
-    start_date: createDateTime(2026, 6, 20),
-    end_date: createDateTime(2026, 7, 20),
-    score: 50,
-  };
-  return assignment;
-}
-function createQuestionBank(type = "true_false") {
-  let questionBank = {
-    question: generateRandomString(50),
-    answer: generateRandomString(10),
-    score: 50,
-    type: type,
-    choice: [],
-  };
-
-  if (type == "mcq") {
-    for (let i = 0; i < 3; i++) {
-      questionBank.choice.push(generateRandomString(10));
+async function TestSeeAllReadNotification(user_id, notificationSize) {
+  it(`Should allow user to see all notifications if status was all`, async () => {
+    let response = await request(app)
+      .get(`/notification`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .send({ user_id: `${user_id()}`, status: "all" });
+    expect(response.status).toBe(200);
+    expect(response.body.notifications.length).toBe(notificationSize);
+    const notifications = response.body.notifications;
+    for (let notification of notifications) {
+      expect(notification.status).toBe("read");
     }
-    questionBank.choice.push(questionBank.answer);
-  }
-  return questionBank;
-}
-
-function createQuiz(questions_ids, questions_length = 10) {
-  let quiz = {
-    title: generateRandomString(50),
-    description: generateRandomString(200),
-    start_date: createDateTime(2026, 6, 20),
-    end_date: createDateTime(2026, 7, 20),
-    question: [
-      ...questions_ids.slice(
-        0,
-        Math.min(questions_length, questions_ids.length),
-      ),
-    ],
-  };
-
-  return quiz;
-}
-function createDummyFile(name = "test.pdf", sizeMB = 1) {
-  const sizeInBytes = sizeMB * 1024 * 1024;
-
-  return {
-    name,
-    buffer: Buffer.alloc(sizeInBytes), // file content
-  };
-}
-function createDateTime(year, month, day, hours = 0, minutes = 0, seconds = 0) {
-  // ⚠️ month is 0-based in JS (0 = Jan, 11 = Dec)
-  return new Date(
-    Date.UTC(year, month - 1, day, hours, minutes, seconds),
-  ).toISOString();
-}
-function generateRandomString(length) {
-  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-  let result = "";
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * letters.length);
-    result += letters[randomIndex];
-  }
-  return result;
-}
-
-const adminUser = {
-  email: "admin@example.com",
-  password: "0Admin@example.com",
-};
-
-const studentUser = {
-  email: "student@example.com",
-  password: "Password@123",
-};
-
-const instructorUser = {
-  email: "instructor@example.com",
-  password: "Password@123",
-};
-const commonInvalids = [
-  generateRandomString(501),
-  generateRandomString(700),
-  generateRandomString(1000),
-  generateRandomString(10) + "123546",
-  "",
-  null,
-  "0123",
-  "000123",
-  "+123",
-  "-123",
-  "-+123",
-  -123,
-  123,
-  -5.999,
-  -0.1999,
-  200.1999,
-  100.1999,
-  110.1999,
-  910.1999,
-  "@#$dadsadad@#",
-  ".1000",
-  null,
-  true,
-  false,
-  generateRandomString(50) + "@" + generateRandomString(10) + ".",
-  "A@A.A",
-  [],
-  [1, 2],
-  ["01", "012", "222", "1"],
-  ["Sadda", 0],
-  [true],
-  [null],
-  "2021-01-01T00:00:00Z",
-  "2020-01-01T00:00:00Z",
-  "2000-01-01T00:00:00Z",
-  "2029-01-01T00:00:00Z",
-  "2030-01-01T00:00:00Z",
-  "2110-01-01T00:00:00Z",
-];
-// helper to create + login user dynamically
-async function createAndLoginUser(userData) {
-  let response = await request(app).post("/user/login").send(adminUser);
-  const token = response.body.token;
-  // create user
-  await request(app)
-    .post("/user")
-    .set("Authorization", `Bearer ${token}`)
-    .send(userData);
-
-  // login user
-  const loginRes = await request(app).post("/user/login").send({
-    email: userData.email,
-    password: userData.password,
   });
-
-  return loginRes.body.token;
 }
-// helper to login user dynamically
-async function getToken(userData) {
-  // login user
-  const loginRes = await request(app).post("/user/login").send({
-    email: userData.email,
-    password: userData.password,
+async function TestSeeNotification(roles, message, notificationSize) {
+  roles.forEach((role) => {
+    it(`Should allow ${role.name} to see ${message} notification`, async () => {
+      let response = await request(app)
+        .get(`/notification`)
+        .set("Authorization", `Bearer ${role.token()}`)
+        .send(role.body());
+      expect(response.status).toBe(200);
+      expect(response.body.notifications.length).toBe(notificationSize);
+      const notifications = response.body.notifications;
+      for (let notification of notifications) {
+        expect(notification.status).toBe(role.status);
+      }
+    });
   });
-
-  return loginRes.body.token;
 }
+function createRoles(name, token, body) {
+  return [
+    {
+      name: name,
+      token: token,
+      body: () => {
+        return {};
+      },
+      status: "unread",
+    },
+    {
+      name: "admin",
+      token: () => adminToken,
+      body: body,
+      status: "read",
+    },
+  ];
+}
+async function TestNotification(
+  name,
+  token,
+  id,
+  body,
+  message,
+  notificationSize,
+) {
+  TestEmptyNotification(id, "read");
+  TestSeeNotification(
+    createRoles(name, token, body),
+    message,
+    notificationSize,
+  );
+  TestSeeAllReadNotification(id, notificationSize);
+  TestEmptyNotification(id, "unread");
+}
+const rules = {
+  enroll: true,
+  unenroll: true,
+  acceptStudent: true,
+  rejectStudent: true,
+  updateCourse: true,
+  deleteCourse: true,
+  createLesson: true,
+  updateLesson: true,
+  deleteLesson: true,
+  createAssignment: true,
+  updateAssignment: true,
+  deleteAssignment: true,
+  createQuiz: true,
+  updateQuiz: true,
+  deleteQuiz: true,
+  createCourseMediaFile: true,
+  deleteCourseMediaFile: true,
+  createAssignmentMediaFile: true,
+  deleteAssignmentMediaFile: true,
+  gradeSubmission: true,
+};
+async function initialize(rules) {
+  let instructorToken, studentToken, instructorId, studentId;
+  let courseId, assignmentId, quizId, lessonId;
+  let courseFilename, assignmentFilename;
+  let response;
+  instructorToken = await createAndLoginUser(createUser("instructor"));
+  studentToken = await createAndLoginUser(createUser("student"));
+  response = await request(app)
+    .get("/user/me")
+    .set("Authorization", `Bearer ${instructorToken}`)
+    .send();
+  expect(response.status).toBe(200);
+  instructorId = response.body.user.id;
+  response = await request(app)
+    .get("/user/me")
+    .set("Authorization", `Bearer ${studentToken}`)
+    .send();
+  expect(response.status).toBe(200);
+  studentId = response.body.user.id;
 
-async function addQuestionsAndGetIDs(courseId, instructorToken, length = 20) {
-  const questions_ids = [];
-  const questionTypes = ["mcq", "true_false", "short_answer"];
-  for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * questionTypes.length);
-    const questionType = questionTypes[randomIndex];
-    const questionBank = createQuestionBank(questionType);
-    const response = await request(app)
-      .post(`/course/${courseId}/question_Bank`)
+  const course = createCourse();
+  response = await request(app)
+    .post("/course")
+    .set("Authorization", `Bearer ${instructorToken}`)
+    .send(course);
+  expect(response.status).toBe(201);
+  courseId = response.body.course.id;
+
+  response = await request(app)
+    .post(`/course/${courseId}/enrollment`)
+    .set("Authorization", `Bearer ${studentToken}`)
+    .send();
+  expect(response.status).toBe(201);
+
+  if (rules.unenroll) {
+    response = await request(app)
+      .delete(`/course/${courseId}/enrollment`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (rules.rejectStudent == null && rules.unenroll == null) {
+    response = await request(app)
+      .put(`/course/${courseId}/enrollment`)
       .set("Authorization", `Bearer ${instructorToken}`)
-      .send(questionBank);
-    expect(response.status).toBe(201);
-    questions_ids.push(`${response.body.question.question_id}`);
+      .send({ status: "accepted", student_id: `${studentId}` });
+    expect(response.status).toBe(200);
   }
-  return questions_ids;
+  if (rules.rejectStudent) {
+    response = await request(app)
+      .put(`/course/${courseId}/enrollment`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send({ status: "rejected", student_id: `${studentId}` });
+    expect(response.status).toBe(200);
+  }
+  if (rules.updateCourse) {
+    const newCourse = createCourse();
+    response = await request(app)
+      .put(`/course/${courseId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(newCourse);
+    expect(response.status).toBe(200);
+  }
+  if (rules.createLesson || rules.updateLesson || rules.deleteLesson) {
+    const lesson = createLesson();
+    response = await request(app)
+      .post(`/course/${courseId}/lesson`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(lesson);
+    expect(response.status).toBe(201);
+    lessonId = response.body.lesson.id;
+  }
+  if (rules.updateLesson) {
+    const newLesson = createLesson();
+    response = await request(app)
+      .put(`/course/${courseId}/lesson/${lessonId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(newLesson);
+    expect(response.status).toBe(200);
+  }
+  if (rules.deleteLesson) {
+    response = await request(app)
+      .delete(`/course/${courseId}/lesson/${lessonId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (
+    rules.createAssignment ||
+    rules.updateAssignment ||
+    rules.deleteAssignment ||
+    rules.createAssignmentMediaFile ||
+    rules.deleteAssignmentMediaFile ||
+    rules.gradeSubmission
+  ) {
+    const assignment = createAssignment();
+    response = await request(app)
+      .post(`/course/${courseId}/assignment`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(assignment);
+    expect(response.status).toBe(201);
+    assignmentId = response.body.assignment.id;
+  }
+  if (rules.updateAssignment) {
+    const newAssignment = createAssignment();
+    response = await request(app)
+      .put(`/course/${courseId}/assignment/${assignmentId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(newAssignment);
+    expect(response.status).toBe(200);
+  }
+  if (rules.deleteAssignment) {
+    response = await request(app)
+      .delete(`/course/${courseId}/assignment/${assignmentId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (rules.createQuiz || rules.updateQuiz || rules.deleteQuiz) {
+    questions_ids = await addQuestionsAndGetIDs(courseId, instructorToken);
+    const quiz = createQuiz(questions_ids);
+    response = await request(app)
+      .post(`/course/${courseId}/quiz`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(quiz);
+    expect(response.status).toBe(201);
+    quizId = response.body.quiz.id;
+  }
+  if (rules.updateQuiz) {
+    const newQuiz = createQuiz(questions_ids);
+    response = await request(app)
+      .put(`/course/${courseId}/quiz/${quizId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send(newQuiz);
+    expect(response.status).toBe(200);
+  }
+  if (rules.deleteQuiz) {
+    response = await request(app)
+      .delete(`/course/${courseId}/quiz/${quizId}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (rules.createCourseMediaFile || rules.deleteCourseMediaFile) {
+    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
+    response = await request(app)
+      .post(`/course/${courseId}/media_file`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .attach("files", file.buffer, file.name);
+    expect(response.status).toBe(201);
+    courseFilename = file.name;
+  }
+  if (rules.deleteCourseMediaFile) {
+    response = await request(app)
+      .delete(`/course/${courseId}/media_file/${courseFilename}`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (rules.createAssignmentMediaFile || rules.deleteAssignmentMediaFile) {
+    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
+    response = await request(app)
+      .post(`/course/${courseId}/assignment/${assignmentId}/media_file`)
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .attach("files", file.buffer, file.name);
+    expect(response.status).toBe(201);
+    assignmentFilename = file.name;
+  }
+  if (rules.deleteAssignmentMediaFile) {
+    response = await request(app)
+      .delete(
+        `/course/${courseId}/assignment/${assignmentId}/media_file/${assignmentFilename}`,
+      )
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send();
+    expect(response.status).toBe(200);
+  }
+  if (rules.gradeSubmission) {
+    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
+    response = await request(app)
+      .post(`/course/${courseId}/assignment/${assignmentId}/submission`)
+      .set("Authorization", `Bearer ${studentToken}`)
+      .attach("files", file.buffer, file.name);
+    expect(response.status).toBe(201);
+    const submissiontId = response.body.submission.id;
+
+    response = await request(app)
+      .patch(
+        `/course/${courseId}/assignment/${assignmentId}/submission/${submissiontId}`,
+      )
+      .set("Authorization", `Bearer ${instructorToken}`)
+      .send({ score: 50 });
+    expect(response.status).toBe(200);
+  }
+  return { studentId, studentToken, instructorId, instructorToken };
 }
 describe("Testing Get /notification", () => {
   let adminToken, instructorToken, studentToken, instructorId, studentId;
@@ -238,14 +348,14 @@ describe("Testing Get /notification", () => {
         { name: "instructor", token: () => instructorToken },
         { name: "student", token: () => studentToken },
       ];
-      const ids = [
+      const users = [
         { name: "instructor", id: () => instructorId },
         { name: "student", id: () => studentId },
       ];
       const statuses = [undefined, "all", "read", "unread"];
 
-      statuses.forEach((status) => {
-        roles.forEach((role) => {
+      roles.forEach((role) => {
+        statuses.forEach((status) => {
           it(`Should return [] if the user don't have any notification at all (${role.name})`, async () => {
             let response = await request(app)
               .get(`/notification`)
@@ -255,92 +365,43 @@ describe("Testing Get /notification", () => {
             expect(response.body.notifications.length).toBe(0);
           });
         });
-        ids.forEach((id) => {
-          it(`Should return [] if the user don't have any notification at all (admin) (${id.name})`, async () => {
+      });
+      users.forEach((user) => {
+        statuses.forEach((status) => {
+          it(`Should return [] if the user don't have any notification at all (admin) (${user.name})`, async () => {
             let response = await request(app)
               .get(`/notification`)
               .set("Authorization", `Bearer ${adminToken}`)
-              .send({ user_id: `${id.id()}`, status: status });
+              .send({ status: status, user_id: `${user.id()}` });
             expect(response.status).toBe(200);
             expect(response.body.notifications.length).toBe(0);
           });
         });
       });
     });
+    describe("Authentication and Authorization validation (Missing, Empty, Invalid, Unauthorized)", () => {
+      testInvalidAuthenticationAndAuthorizationRequest(
+        () => `/notification`,
+        () => undefined,
+        [],
+        (req, url) => req.get(url),
+      );
+    });
     describe("Should return 400 if request body is (missing, empty, invalid)", () => {
-      const scenarios = [
-        { name: "missing", values: [undefined] },
-        { name: "empty", values: [""] },
-        { name: "invalid", values: ["adad", "{}"] },
-      ];
-
-      scenarios.forEach((scenarios) => {
-        const values = scenarios.values;
-        values.forEach((value) => {
-          it(`Should return 400 if request body is ${scenarios.name} (${value})`, async () => {
-            let response = await request(app)
-              .get(`/notification`)
-              .set("Authorization", `Bearer ${adminToken}`)
-              .send(value);
-            expect(response.status).toBe(400);
-          });
-        });
-      });
+      testInvalidBodyRequest(
+        () => `/notification`,
+        [{ name: "admin", token: () => adminToken }],
+        (req, url) => req.get(url),
+      );
     });
-
-    describe("Authorization validation (Missing, Empty, Invalid)", () => {
-      const scenarios = [
-        {
-          name: "missing",
-          setHeader: (req) => req, // do nothing
-        },
-        {
-          name: "empty",
-          setHeader: (req) => req.set("Authorization", ""),
-        },
-        {
-          name: "invalid",
-          values: ["Bearer invalidtoken", "invalidtoken", "Bearer ", "12345"],
-        },
-      ];
-
-      scenarios.forEach((scenario) => {
-        if (scenario.name === "invalid") {
-          scenario.values.forEach((value) => {
-            it(`should return 401 if Authorization is invalid (${value})`, async () => {
-              const response = await request(app)
-                .get(`/notification`)
-                .set("Authorization", value)
-                .send();
-
-              expect(response.status).toBe(401);
-              expect(response.body.errors[0]).toHaveProperty("message");
-            });
-          });
-        } else {
-          it(`should return 401 if Authorization is ${scenario.name}`, async () => {
-            let req = request(app).get(`/notification`).send();
-            req = scenario.setHeader(req);
-
-            const response = await req;
-
-            expect(response.status).toBe(401);
-            expect(response.body.errors[0]).toHaveProperty("message");
-          });
-        }
-      });
-    });
-
-    describe("Notification body Validation", () => {
+    describe("Notification body Validation (Missing, Empty, Invalid)", () => {
       const roles = [
         { name: "admin", token: () => adminToken },
         { name: "instructor", token: () => instructorToken },
         { name: "student", token: () => studentToken },
       ];
-      const requiredFields = ["user_id", "status"];
 
-      // Define all scenarios: missing, empty, invalid
-      const scenarios = ["missing", "empty", "invalid"];
+      const scenarios = ["empty", "invalid"];
 
       roles.forEach((role) => {
         requiredFields.forEach((field) => {
@@ -348,9 +409,7 @@ describe("Testing Get /notification", () => {
           scenarios.forEach((scenario) => {
             let values = [];
 
-            if (scenario === "missing") {
-              return;
-            } else if (scenario === "empty") {
+            if (scenario === "empty") {
               values = [""]; // empty string
             } else if (scenario === "invalid") {
               values = commonInvalids; // invalid values
@@ -362,8 +421,7 @@ describe("Testing Get /notification", () => {
               }`, async () => {
                 const notification = { user_id: "1", status: "all" };
 
-                if (scenario === "missing") delete notification[field];
-                else notification[field] = value;
+                notification[field] = value;
 
                 const response = await request(app)
                   .get(`/notification`)
@@ -381,1922 +439,397 @@ describe("Testing Get /notification", () => {
   });
 });
 describe("Testing Get /notification (Student Enrollment)", () => {
-  let adminToken, instructorToken, studentToken, instructorId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
+    const result = await initialize({ enroll: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow instructor to see enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("unread");
-  });
-  it(`Should allow admin to see enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "instructor",
+    () => instructorToken,
+    () => `${instructorId}`,
+    () => {
+      return { user_id: `${instructorId}` };
+    },
+    "enrollment",
+    1,
+  );
 });
 
 describe("Testing Get /notification (Student Unenrollment)", () => {
-  let adminToken, instructorToken, studentToken, instructorId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .delete(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ unenroll: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow instructor to see unenrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see unenrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${instructorId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "instructor",
+    () => instructorToken,
+    () => `${instructorId}`,
+    () => {
+      return { user_id: `${instructorId}` };
+    },
+    "unenrollment",
+    2,
+  );
 });
 
 describe("Testing Get /notification (Student Enrollment Accepted)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
+    const result = await initialize({ enroll: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see accepted enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("unread");
-  });
-  it(`Should allow admin to see accepted enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "accepted enrollment",
+    1,
+  );
 });
 describe("Testing Get /notification (Student Enrollment Rejected)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "rejected", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
+    const result = await initialize({ enroll: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see rejected enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("unread");
-  });
-  it(`Should allow admin to see rejected enrollment notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(1);
-    expect(response.body.notifications[0].status).toBe("read");
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "rejected enrollment",
+    1,
+  );
 });
 describe("Testing Get /notification (Course Update)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const newCourse = createCourse();
-    response = await request(app)
-      .put(`/course/${courseId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(newCourse);
-    expect(response.status).toBe(200);
+    const result = await initialize({ updateCourse: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see course update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see course update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "course update",
+    2,
+  );
 });
 
 describe("Testing Get /notification (Lesson Creation)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const lesson = createLesson();
-    response = await request(app)
-      .post(`/course/${courseId}/lesson`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(lesson);
-    expect(response.status).toBe(201);
+    const result = await initialize({ createLesson: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see lesson creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see lesson creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "lesson creation",
+    2,
+  );
 });
 describe("Testing Get /notification (Lesson Deletion)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const lesson = createLesson();
-    response = await request(app)
-      .post(`/course/${courseId}/lesson`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(lesson);
-    expect(response.status).toBe(201);
-    const lessonId = response.body.lesson.id;
-    response = await request(app)
-      .delete(`/course/${courseId}/lesson/${lessonId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ deleteLesson: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see lesson deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see lesson deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "lesson deletion",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Lesson Update)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const lesson = createLesson();
-    response = await request(app)
-      .post(`/course/${courseId}/lesson`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(lesson);
-    expect(response.status).toBe(201);
-    const lessonId = response.body.lesson.id;
-
-    const newLesson = createLesson();
-    response = await request(app)
-      .put(`/course/${courseId}/lesson/${lessonId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(newLesson);
-    expect(response.status).toBe(200);
+    const result = await initialize({ updateLesson: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see lesson update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see lesson update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "lesson update",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Assignment Creation)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
+    const result = await initialize({ createAssignment: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see assignment creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment creation",
+    2,
+  );
 });
 
 describe("Testing Get /notification (Assignment Deletion)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
-    const assignmentId = response.body.assignment.id;
-    response = await request(app)
-      .delete(`/course/${courseId}/assignment/${assignmentId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ deleteAssignment: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see assignment deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment deletion",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Assignment Update)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
-    const assignmentId = response.body.assignment.id;
-
-    const newAssignment = createAssignment();
-    response = await request(app)
-      .put(`/course/${courseId}/assignment/${assignmentId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(newAssignment);
-    expect(response.status).toBe(200);
+    const result = await initialize({ updateAssignment: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see assignment update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment update",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Quiz Creation)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
-  let questions_ids = [];
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    questions_ids = await addQuestionsAndGetIDs(courseId, instructorToken);
-    const quiz = createQuiz(questions_ids);
-    response = await request(app)
-      .post(`/course/${courseId}/quiz`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(quiz);
-    expect(response.status).toBe(201);
+    const result = await initialize({ createQuiz: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see quiz creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see quiz creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "quiz creation",
+    2,
+  );
 });
 
 describe("Testing Get /notification (Quiz Deletion)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
-  let questions_ids = [];
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    questions_ids = await addQuestionsAndGetIDs(courseId, instructorToken);
-    const quiz = createQuiz(questions_ids);
-    response = await request(app)
-      .post(`/course/${courseId}/quiz`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(quiz);
-    expect(response.status).toBe(201);
-
-    const quizId = response.body.quiz.id;
-    response = await request(app)
-      .delete(`/course/${courseId}/quiz/${quizId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ deleteQuiz: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see quiz deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see quiz deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "quiz deletion",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Quiz Update)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
-  let questions_ids = [];
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    questions_ids = await addQuestionsAndGetIDs(courseId, instructorToken);
-    const quiz = createQuiz(questions_ids);
-    response = await request(app)
-      .post(`/course/${courseId}/quiz`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(quiz);
-    expect(response.status).toBe(201);
-
-    const quizId = response.body.quiz.id;
-
-    const newQuiz = createQuiz(questions_ids);
-    response = await request(app)
-      .put(`/course/${courseId}/quiz/${quizId}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(newQuiz);
-    expect(response.status).toBe(200);
+    const result = await initialize({ updateQuiz: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see quiz update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see quiz update notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "quiz update",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Course Media File Creation)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
-    response = await request(app)
-      .post(`/course/${courseId}/media_file`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .attach("files", file.buffer, file.name);
-    expect(response.status).toBe(201);
+    const result = await initialize({ createCourseMediaFile: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see course media file creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see course media file creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(2);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "course media file creation",
+    2,
+  );
 });
 
 describe("Testing Get /notification (Course Media File Deletion)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
-    response = await request(app)
-      .post(`/course/${courseId}/media_file`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .attach("files", file.buffer, file.name);
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .delete(`/course/${courseId}/media_file/${file.name}`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ deleteCourseMediaFile: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see course media file deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see course media file deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "course media file deletion",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Assignment Media File Creation)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
-    const assignmentId = response.body.assignment.id;
-
-    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
-    response = await request(app)
-      .post(`/course/${courseId}/assignment/${assignmentId}/media_file`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .attach("files", file.buffer, file.name);
-    expect(response.status).toBe(201);
+    const result = await initialize({ createAssignmentMediaFile: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment media file creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see assignment media file creation notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment media file creation",
+    3,
+  );
 });
 
 describe("Testing Get /notification (Assignment Media File Deletion)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
-    const assignmentId = response.body.assignment.id;
-
-    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
-    response = await request(app)
-      .post(`/course/${courseId}/assignment/${assignmentId}/media_file`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .attach("files", file.buffer, file.name);
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .delete(
-        `/course/${courseId}/assignment/${assignmentId}/media_file/${file.name}`,
-      )
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    expect(response.status).toBe(200);
+    const result = await initialize({ deleteAssignmentMediaFile: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment media file deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(4);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-
-  it(`Should allow admin to see assignment media file deletion notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(4);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(4);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment media file deletion",
+    4,
+  );
 });
 
 describe("Testing Get /notification (Assignment Submission Grade)", () => {
-  let adminToken, instructorToken, studentToken, instructorId, studentId;
-  let courseId;
+  let instructorToken, studentToken, instructorId, studentId;
   beforeAll(async () => {
-    adminToken = await getToken(adminUser);
-    instructorToken = await createAndLoginUser(createUser("instructor"));
-    studentToken = await createAndLoginUser(createUser("student"));
-
-    let response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send();
-    instructorId = response.body.user.id;
-
-    response = await request(app)
-      .get("/user/me")
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    studentId = response.body.user.id;
-
-    const course = createCourse();
-    response = await request(app)
-      .post("/course")
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(course);
-    courseId = response.body.course.id;
-
-    response = await request(app)
-      .post(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send();
-    expect(response.status).toBe(201);
-
-    response = await request(app)
-      .put(`/course/${courseId}/enrollment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ status: "accepted", student_id: `${studentId}` });
-    expect(response.status).toBe(200);
-
-    const assignment = createAssignment();
-    response = await request(app)
-      .post(`/course/${courseId}/assignment`)
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send(assignment);
-    expect(response.status).toBe(201);
-    const assignmentId = response.body.assignment.id;
-
-    const file = createDummyFile(`${generateRandomString(10)}.pdf`);
-    response = await request(app)
-      .post(`/course/${courseId}/assignment/${assignmentId}/submission`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .attach("files", file.buffer, file.name);
-    expect(response.status).toBe(201);
-    const submissiontId = response.body.submission.id;
-
-    response = await request(app)
-      .patch(
-        `/course/${courseId}/assignment/${assignmentId}/submission/${submissiontId}`,
-      )
-      .set("Authorization", `Bearer ${instructorToken}`)
-      .send({ score: 50 });
-    expect(response.status).toBe(200);
+    const result = await initialize({ gradeSubmission: true });
+    instructorToken = result.instructorToken;
+    studentToken = result.studentToken;
+    instructorId = result.instructorId;
+    studentId = result.studentId;
   });
-  it(`Should return [] if the user hasn't read any notification and wants to see only read notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "read" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
-  it(`Should allow student to see assignment submission grade notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${studentToken}`)
-      .send({});
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("unread");
-    }
-  });
-  it(`Should allow admin to see assignment submission grade notification`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}` });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should allow user to see all notifications if status was all`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "all" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(3);
-    const notifications = response.body.notifications;
-    for (let notification of notifications) {
-      expect(notification.status).toBe("read");
-    }
-  });
-  it(`Should return [] if the user has read all notifications and wants to see only unread notifications`, async () => {
-    let response = await request(app)
-      .get(`/notification`)
-      .set("Authorization", `Bearer ${adminToken}`)
-      .send({ user_id: `${studentId}`, status: "unread" });
-    expect(response.status).toBe(200);
-    expect(response.body.notifications.length).toBe(0);
-  });
+  TestNotification(
+    "student",
+    () => studentToken,
+    () => `${studentId}`,
+    () => {
+      return { user_id: `${studentId}` };
+    },
+    "assignment submission grade",
+    3,
+  );
 });

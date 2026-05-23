@@ -1,10 +1,8 @@
-const {
-  createQuestionBankSchema,
-} = require("../validator/questionBankValidator");
+const { questionBankSchema } = require("../validator/questionBankValidator");
 const questionBankModel = require("../model/questionBankModel");
 
 async function createQuestionBank(course_id, body) {
-  const validatedQuestionBank = await createQuestionBankSchema.parse(body);
+  const validatedQuestionBank = await questionBankSchema.parse(body);
 
   const questionBank = await questionBankModel.createQuestionBank(
     course_id,
@@ -43,7 +41,7 @@ async function updateQuestionBankById(course_id, question_id, body) {
   if (body == null || Array.isArray(body) || typeof body != "object") {
     throw {
       status: 400,
-      message: "Body must be Body must be a JSON object",
+      message: "Body must be a JSON object",
     };
   }
 
@@ -70,7 +68,7 @@ async function updateQuestionBankById(course_id, question_id, body) {
   });
 
   const validatedQuestionBank =
-    await createQuestionBankSchema.parse(safeQuestionBank);
+    await questionBankSchema.parse(safeQuestionBank);
   delete validatedQuestionBank.choice;
   const updateQuestionBank = await questionBankModel.updateQuestionBankById(
     course_id,

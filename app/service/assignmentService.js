@@ -1,15 +1,15 @@
 const {
-  createAssignmentSchema,
-  createUpdateAssignmentSchema,
-  assertValidTimeAndDuration,
+  assignmentSchema,
+  updateAssignmentSchema,
 } = require("../validator/assignmentValidator");
+const { assertValidTimeAndDuration } = require("../validator/validator");
 const assignmentModel = require("../model/assignmentModel");
 const courseService = require("./courseService");
 
 async function createAssignment(course_id, body) {
-  const validatedAssignment = await createAssignmentSchema.parse(body);
+  const validatedAssignment = await assignmentSchema.parse(body);
   const course = await courseService.getCourseById(course_id);
-  await assertValidTimeAndDuration(course, validatedAssignment);
+  await assertValidTimeAndDuration(course, validatedAssignment, "Assignment");
   const assignment = await assignmentModel.createAssignment(
     course_id,
     validatedAssignment,
@@ -37,16 +37,7 @@ async function getAssignment(course_id, assignment_id) {
   }
   return assignment;
 }
-async function getAssignmentOTP(course_id, assignment_id) {
-  const assignment = await assignmentModel.getAssignmentOTP(
-    course_id,
-    assignment_id,
-  );
-  if (assignment == null) {
-    throw { status: 404, message: "Assignment not found" };
-  }
-  return assignment;
-}
+
 async function getAllAssignments(course_id) {
   const assignments = await assignmentModel.getAllAssignments(course_id);
   return assignments;
@@ -55,7 +46,7 @@ async function getAllAssignments(course_id) {
 async function updateAssignmentById(course_id, assignment_id, assignment) {
   // Validate assignment
   // Schema Validation
-  const validatedAssignment = createUpdateAssignmentSchema.parse(assignment);
+  const validatedAssignment = updateAssignmentSchema.parse(assignment);
 
   let safeAssignment = {};
   const safeFields = [
@@ -91,7 +82,7 @@ async function updateAssignmentById(course_id, assignment_id, assignment) {
     validatedAssignment.end_date = oldAssignment.end_date;
   }
 
-  assertValidTimeAndDuration(course, validatedAssignment);
+  assertValidTimeAndDuration(course, validatedAssignment, "Assignment");
 
   const updatedAssignment = await assignmentModel.updateAssignmentById(
     course_id,
@@ -109,7 +100,6 @@ module.exports = {
   createAssignment,
   deleteAssignment,
   getAssignment,
-  getAssignmentOTP,
   getAllAssignments,
   updateAssignmentById,
 };

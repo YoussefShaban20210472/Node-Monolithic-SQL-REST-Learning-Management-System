@@ -1,7 +1,7 @@
 const mediaFileModel = require("../model/mediaFileModel");
 const fs = require("fs/promises");
 const path = require("path");
-const { createMediaFileSchema } = require("../validator/mediaFileValidator");
+const { mediaFileSchema } = require("../validator/mediaFileValidator");
 const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 async function createMediaFiles(course_id, files) {
   let filenames = [];
@@ -23,7 +23,7 @@ async function createMediaFiles(course_id, files) {
   }
 }
 async function deleteMediaFile(course_id, filename) {
-  const validateMediaFile = createMediaFileSchema.parse({ filename });
+  const validateMediaFile = mediaFileSchema.parse({ filename });
   const media_file = await mediaFileModel.deleteMediaFile(course_id, filename);
   if (media_file == null) {
     throw { status: 404, message: "Media File not found" };
@@ -36,7 +36,7 @@ async function deleteMediaFile(course_id, filename) {
   return media_file;
 }
 async function getMediaFile(course_id, filename) {
-  const validateMediaFile = createMediaFileSchema.parse({ filename });
+  const validateMediaFile = mediaFileSchema.parse({ filename });
   const media_file = await mediaFileModel.getMediaFile(course_id, filename);
   if (media_file == null) {
     throw { status: 404, message: "Media File not found" };

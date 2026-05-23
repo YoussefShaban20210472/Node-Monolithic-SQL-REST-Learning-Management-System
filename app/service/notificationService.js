@@ -1,6 +1,4 @@
-const {
-  createNotificationSchema,
-} = require("../validator/notificationValidator");
+const { notificationSchema } = require("../validator/notificationValidator");
 const notificationModel = require("../model/notificationModel");
 
 async function notify(course_id, user_id, message) {
@@ -20,7 +18,7 @@ async function notifyStudentBySubmissionId(course_id, submission_id, message) {
   );
 }
 async function getNotifications(body) {
-  const validatedBody = createNotificationSchema.parse(body);
+  const validatedBody = notificationSchema.parse(body);
   const user_id = validatedBody.user_id;
   const status = validatedBody.status;
   let notifications;

@@ -1,14 +1,9 @@
 const submissionMediaFileModel = require("../model/submissionMediaFileModel");
-const { createEnrollmentSchema } = require("../validator/enrollmentValidator");
-const userService = require("./userService");
+const { mediaFileSchema } = require("../validator/mediaFileValidator");
+const { submissionScoreSchema } = require("../validator/submissionValidator");
+const enrollmentService = require("./enrollmentService");
 const fs = require("fs/promises");
 const path = require("path");
-const { createMediaFileSchema } = require("../validator/mediaFileValidator");
-const {
-  createSubmissionScoreSchema,
-} = require("../validator/submissionValidator");
-const assignmentService = require("./assignmentService");
-const enrollmentService = require("./enrollmentService");
 const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 async function createSubmissionMediaFiles(
   course_id,
@@ -23,21 +18,8 @@ async function createSubmissionMediaFiles(
   for (let file of files) {
     filenames.push(file.originalname);
   }
-  console.log(body, filenames);
   try {
-    const validatedEnrollment = await createEnrollmentSchema.parse(body);
-    const student_id = validatedEnrollment.student_id;
-    await userService.assertValidUserId("student", student_id);
-
-    let enrollment = await enrollmentService.getEnrollment(
-      { student_id },
-      course_id,
-    );
-    if (enrollment.status != "accepted") {
-      throw { status: 401, message: "Student is not enrolled to the course" };
-    }
-
-    const _ = await assignmentService.getAssignment(course_id, assignment_id);
+    const student_id = body.student_id;
 
     return await submissionMediaFileModel.createSubmissionMediaFiles(
       student_id,
@@ -56,7 +38,6 @@ async function createSubmissionMediaFiles(
 }
 
 async function getSubmission(course_id, assignment_id, submission_id) {
-  const _ = await assignmentService.getAssignment(course_id, assignment_id);
   const submission = await submissionMediaFileModel.getSubmission(
     assignment_id,
     submission_id,
@@ -102,7 +83,7 @@ async function getSubmissionMediaFile(
     assignment_id,
     submission_id,
   );
-  const validateSubmissionMediaFile = createMediaFileSchema.parse({ filename });
+  const validateSubmissionMediaFile = mediaFileSchema.parse({ filename });
   const media_file = await submissionMediaFileModel.getSubmissionMediaFile(
     submission_id,
     filename,
@@ -132,9 +113,8 @@ async function updateSubmissionScore(
   submission_id,
   body,
 ) {
-  const validatedBody = createSubmissionScoreSchema.parse(body);
+  const validatedBody = submissionScoreSchema.parse(body);
   const score = validatedBody.score;
-  const _ = await assignmentService.getAssignment(course_id, assignment_id);
   const submission = await submissionMediaFileModel.updateSubmissionScore(
     assignment_id,
     submission_id,

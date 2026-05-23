@@ -1,6 +1,6 @@
 const { z } = require("zod");
 
-const createAuthSchema = z.object({
+const authSchema = z.object({
   email: z
     .string({
       error: (issue) =>
@@ -19,4 +19,4 @@ const createAuthSchema = z.object({
     .min(1, "password is required"),
 });
 
-module.exports = createAuthSchema;
+module.exports = authSchema;

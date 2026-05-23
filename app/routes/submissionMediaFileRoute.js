@@ -5,40 +5,58 @@ const authorizeAdminStudentMiddleware = require("../middleware/authorizeAdminStu
 const authorizeAdminInstructorMiddleware = require("../middleware/authorizeAdminInstructorMiddleware");
 const authorizeInstructorOwnershipMiddleware = require("../middleware/authorizeInstructorOwnershipMiddleware");
 const ensureCourseExistsMiddleware = require("../middleware/ensureCourseExistsMiddleware");
-const ensureJsonBodyRequestMiddleware = require("../middleware/ensureJsonBodyRequestMiddleware");
+const ensureAssignmentExistsMiddleware = require("../middleware/ensureAssignmentExistsMiddleware");
 const ensureUserInCourseMiddleware = require("../middleware/ensureUserInCourseMiddleware");
+const ensureStudentEnrolledInCourseMiddleware = require("../middleware/ensureStudentEnrolledInCourseMiddleware");
 const idFormatMiddleware = require("../middleware/idFormatMiddleware");
 const authorizeStudentSubmissionOwnershipMiddleware = require("../middleware/authorizeStudentSubmissionOwnershipMiddleware");
+const {
+  validateAndAuthorizeStudentIDPassedByAdminMiddleware,
+} = require("../middleware/validateAndAuthorizeStudentIDPassedByAdminMiddleware");
 const { submissionUpload } = require("../storage/storage");
+const setErrorInsideRequestMiddleware = require("../middleware/setErrorInsideRequestMiddleware");
+const badSolutionForSubmissionMiddleware = require("../middleware/badSolutionForSubmissionMiddleware");
 const router = express.Router();
 
 router.post(
   "/course/:course_id/assignment/:assignment_id/submission",
   idFormatMiddleware,
   authorizeAdminStudentMiddleware,
-  authorizeInstructorOwnershipMiddleware,
   ensureCourseExistsMiddleware,
+  ensureAssignmentExistsMiddleware,
+  ensureStudentEnrolledInCourseMiddleware,
+  badSolutionForSubmissionMiddleware,
+  validateAndAuthorizeStudentIDPassedByAdminMiddleware,
+  setErrorInsideRequestMiddleware,
   submissionUpload.array("files"),
+  badSolutionForSubmissionMiddleware,
   submissionMediaFileController.createSubmissionMediaFiles,
 );
 router.delete(
   "/course/:course_id/assignment/:assignment_id/submission/:submission_id",
   idFormatMiddleware,
   authorizeAdminStudentMiddleware,
+  ensureCourseExistsMiddleware,
+  ensureAssignmentExistsMiddleware,
+  ensureStudentEnrolledInCourseMiddleware,
   authorizeStudentSubmissionOwnershipMiddleware,
   submissionMediaFileController.deleteSubmissionMediaFile,
 );
 router.get(
   "/course/:course_id/assignment/:assignment_id/submission/:submission_id/media_file/:filename",
   idFormatMiddleware,
-  authorizeInstructorOwnershipMiddleware,
+  ensureCourseExistsMiddleware,
+  ensureAssignmentExistsMiddleware,
+  ensureUserInCourseMiddleware,
   authorizeStudentSubmissionOwnershipMiddleware,
   submissionMediaFileController.getSubmissionMediaFile,
 );
 router.get(
   "/course/:course_id/assignment/:assignment_id/submission/:submission_id",
   idFormatMiddleware,
-  authorizeInstructorOwnershipMiddleware,
+  ensureCourseExistsMiddleware,
+  ensureAssignmentExistsMiddleware,
+  ensureUserInCourseMiddleware,
   authorizeStudentSubmissionOwnershipMiddleware,
   submissionMediaFileController.getSubmission,
 );
@@ -46,6 +64,8 @@ router.patch(
   "/course/:course_id/assignment/:assignment_id/submission/:submission_id",
   idFormatMiddleware,
   authorizeAdminInstructorMiddleware,
+  ensureCourseExistsMiddleware,
+  ensureAssignmentExistsMiddleware,
   authorizeInstructorOwnershipMiddleware,
   submissionMediaFileController.updateSubmissionScore,
 );

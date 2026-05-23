@@ -5,47 +5,43 @@ const authorizeAdminStudentMiddleware = require("../middleware/authorizeAdminStu
 const authorizeAdminInstructorMiddleware = require("../middleware/authorizeAdminInstructorMiddleware");
 const authorizeInstructorOwnershipMiddleware = require("../middleware/authorizeInstructorOwnershipMiddleware");
 const ensureCourseExistsMiddleware = require("../middleware/ensureCourseExistsMiddleware");
-const ensureJsonBodyRequestMiddleware = require("../middleware/ensureJsonBodyRequestMiddleware");
-const ensureUserInCourseMiddleware = require("../middleware/ensureUserInCourseMiddleware");
+const ensureQuizExistsMiddleware = require("../middleware/ensureQuizExistsMiddleware");
+const ensureStudentEnrolledInCourseMiddleware = require("../middleware/ensureStudentEnrolledInCourseMiddleware");
+const {
+  validateAndAuthorizeStudentIDPassedByAdminMiddleware,
+  validateAndAuthorizeStudentIDPassedByAdminInstructorMiddleware,
+} = require("../middleware/validateAndAuthorizeStudentIDPassedByAdminMiddleware");
 const idFormatMiddleware = require("../middleware/idFormatMiddleware");
+const ensureUserInCourseMiddleware = require("../middleware/ensureUserInCourseMiddleware");
 const router = express.Router();
 
 router.post(
   "/course/:course_id/quiz/:quiz_id/attempt",
   idFormatMiddleware,
   authorizeAdminStudentMiddleware,
-  ensureUserInCourseMiddleware,
   ensureCourseExistsMiddleware,
+  ensureQuizExistsMiddleware,
+  ensureStudentEnrolledInCourseMiddleware,
+  validateAndAuthorizeStudentIDPassedByAdminMiddleware,
   quizAttemptController.createQuizAttempt,
 );
 router.get(
   "/course/:course_id/quiz/:quiz_id/attempt",
   idFormatMiddleware,
-  ensureUserInCourseMiddleware,
   ensureCourseExistsMiddleware,
+  ensureQuizExistsMiddleware,
+  ensureUserInCourseMiddleware,
+  validateAndAuthorizeStudentIDPassedByAdminInstructorMiddleware,
   quizAttemptController.getQuizAttempt,
 );
 router.get(
   "/course/:course_id/quiz/:quiz_id/attempt/all",
   idFormatMiddleware,
   authorizeAdminInstructorMiddleware,
-  authorizeInstructorOwnershipMiddleware,
   ensureCourseExistsMiddleware,
+  ensureQuizExistsMiddleware,
+  authorizeInstructorOwnershipMiddleware,
   quizAttemptController.getAllQuizAttempts,
 );
-
-// router.get(
-//   "/course/:course_id/lesson/:lesson_id/attendance",
-//   idFormatMiddleware,
-//   ensureUserInCourseMiddleware,
-//   attendanceController.getAttendance,
-// );
-// router.get(
-//   "/course/:course_id/lesson/:lesson_id/attendance/all",
-//   idFormatMiddleware,
-//   authorizeAdminInstructorMiddleware,
-//   authorizeInstructorOwnershipMiddleware,
-//   attendanceController.getAllAttendances,
-// );
 
 module.exports = router;

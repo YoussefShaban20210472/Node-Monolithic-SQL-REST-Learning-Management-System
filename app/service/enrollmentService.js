@@ -1,25 +1,15 @@
-const {
-  createEnrollmentSchema,
-  createUpdateEnrollmentSchema,
-} = require("../validator/enrollmentValidator");
+const { updateEnrollmentSchema } = require("../validator/enrollmentValidator");
 const enrollmentModel = require("../model/enrollmentModel");
 const userService = require("./userService");
-const redis = require("../cache/redis");
 
 async function enroll(course_id, body) {
-  const { _, student_id } = await validateAndEnsureStudentExists(
-    createEnrollmentSchema,
-    body,
-  );
+  const student_id = body.student_id;
   let enrollment = await enrollmentModel.enroll(course_id, student_id);
   return enrollment;
 }
 
 async function unEnroll(course_id, body) {
-  const { _, student_id } = await validateAndEnsureStudentExists(
-    createEnrollmentSchema,
-    body,
-  );
+  const student_id = body.student_id;
 
   let enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
   if (enrollment == null) {
@@ -31,8 +21,9 @@ async function unEnroll(course_id, body) {
   return enrollment;
 }
 async function updateEnrollment(body, course_id) {
-  const { validatedEnrollment, student_id } =
-    await validateAndEnsureStudentExists(createUpdateEnrollmentSchema, body);
+  const student_id = body.student_id;
+  const validatedEnrollment = updateEnrollmentSchema.parse(body);
+
   const status = validatedEnrollment.status;
   enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
 
@@ -48,10 +39,7 @@ async function updateEnrollment(body, course_id) {
 }
 
 async function getEnrollment(body, course_id) {
-  const { _, student_id } = await validateAndEnsureStudentExists(
-    createEnrollmentSchema,
-    body,
-  );
+  const student_id = body.student_id;
 
   let enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
   if (enrollment == null) {
@@ -63,12 +51,7 @@ async function getAllEnrollments(course_id) {
   let enrollments = await enrollmentModel.getAllEnrollments(course_id);
   return enrollments;
 }
-async function validateAndEnsureStudentExists(validator, body) {
-  const validatedEnrollment = await validator.parse(body);
-  const student_id = validatedEnrollment.student_id;
-  await userService.assertValidUserId("student", student_id);
-  return { validatedEnrollment, student_id };
-}
+
 module.exports = {
   enroll,
   unEnroll,

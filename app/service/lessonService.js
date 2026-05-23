@@ -1,16 +1,16 @@
 const {
-  createLessonSchema,
-  createUpdateLessonSchema,
-  assertValidTimeAndDuration,
+  lessonSchema,
+  updateLessonSchema,
 } = require("../validator/lessonValidator");
+const { assertValidTimeAndDuration } = require("../validator/validator");
 const lessonModel = require("../model/lessonModel");
 const courseService = require("./courseService");
 const generateOTP = require("../utils/otp");
 
 async function createLesson(course_id, body) {
-  const validatedLesson = await createLessonSchema.parse(body);
+  const validatedLesson = await lessonSchema.parse(body);
   const course = await courseService.getCourseById(course_id);
-  await assertValidTimeAndDuration(course, validatedLesson);
+  await assertValidTimeAndDuration(course, validatedLesson, "Lesson");
   validatedLesson["otp"] = generateOTP();
   const lesson = await lessonModel.createLesson(course_id, validatedLesson);
   return lesson;
@@ -45,7 +45,7 @@ async function getAllLessons(course_id) {
 async function updateLessonById(course_id, lesson_id, lesson) {
   // Validate lesson
   // Schema Validation
-  const validatedLesson = createUpdateLessonSchema.parse(lesson);
+  const validatedLesson = updateLessonSchema.parse(lesson);
 
   let safeLesson = {};
   const safeFields = ["title", "description", "start_date", "end_date"];
@@ -72,7 +72,7 @@ async function updateLessonById(course_id, lesson_id, lesson) {
     validatedLesson.end_date = oldLesson.end_date;
   }
 
-  assertValidTimeAndDuration(course, validatedLesson);
+  assertValidTimeAndDuration(course, validatedLesson, "Lesson");
 
   const updatedLesson = await lessonModel.updateLessonById(
     course_id,

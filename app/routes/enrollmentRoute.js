@@ -5,7 +5,10 @@ const authorizeAdminStudentMiddleware = require("../middleware/authorizeAdminStu
 const authorizeAdminInstructorMiddleware = require("../middleware/authorizeAdminInstructorMiddleware");
 const authorizeInstructorOwnershipMiddleware = require("../middleware/authorizeInstructorOwnershipMiddleware");
 const ensureCourseExistsMiddleware = require("../middleware/ensureCourseExistsMiddleware");
-const ensureJsonBodyRequestMiddleware = require("../middleware/ensureJsonBodyRequestMiddleware");
+const {
+  validateStudentIDPassedByAdminInstructorMiddleware,
+  validateStudentIDPassedByAdminMiddleware,
+} = require("../middleware/validateUserIDPassedByAdminMiddleware");
 const idFormatMiddleware = require("../middleware/idFormatMiddleware");
 const router = express.Router();
 
@@ -14,6 +17,7 @@ router.post(
   idFormatMiddleware,
   authorizeAdminStudentMiddleware,
   ensureCourseExistsMiddleware,
+  validateStudentIDPassedByAdminMiddleware,
   enrollmentController.enroll,
 );
 
@@ -31,6 +35,7 @@ router.delete(
   idFormatMiddleware,
   authorizeAdminStudentMiddleware,
   ensureCourseExistsMiddleware,
+  validateStudentIDPassedByAdminMiddleware,
   enrollmentController.unEnroll,
 );
 
@@ -38,8 +43,9 @@ router.put(
   "/course/:course_id/enrollment",
   idFormatMiddleware,
   authorizeAdminInstructorMiddleware,
+  ensureCourseExistsMiddleware,
   authorizeInstructorOwnershipMiddleware,
-  ensureJsonBodyRequestMiddleware,
+  validateStudentIDPassedByAdminInstructorMiddleware,
   enrollmentController.updateEnrollment,
 );
 module.exports = router;

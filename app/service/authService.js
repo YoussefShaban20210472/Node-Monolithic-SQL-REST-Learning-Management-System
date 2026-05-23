@@ -1,4 +1,4 @@
-const createAuthSchema = require("../validator/authValidator");
+const authSchema = require("../validator/authValidator");
 const bcrypt = require("bcrypt");
 const userModel = require("../model/userModel");
 const redis = require("../cache/redis");
@@ -28,7 +28,7 @@ async function loginUser(user) {
   // Validate user
 
   // Schema Validation
-  const validatedUser = createAuthSchema.parse(user);
+  const validatedUser = authSchema.parse(user);
 
   // Find user
   const foundUser = (await userModel.findUserByEmail(validatedUser.email)) || {

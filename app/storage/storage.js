@@ -6,9 +6,9 @@ const courseStorage = multer.diskStorage({
   destination: (req, file, cb) => {
     let course_id = req.params.course_id;
     const dir = path.join(DIR, `${course_id}`, "media_files");
-    console.log(dir);
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    let error = req.fileError || null;
+    if (error == null) fs.mkdirSync(dir, { recursive: true });
+    cb(error, dir);
   },
 
   filename: (req, file, cb) => {
@@ -26,8 +26,9 @@ const assignmentStorage = multer.diskStorage({
       "assignments",
       `${assignment_id}`,
     );
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    let error = req.fileError || null;
+    if (error == null) fs.mkdirSync(dir, { recursive: true });
+    cb(error, dir);
   },
 
   filename: (req, file, cb) => {
@@ -43,7 +44,7 @@ const submissionStorage = multer.diskStorage({
     if (req.user.role == "student") {
       student_id = req.user.id;
     } else {
-      student_id = req.body.student_id;
+      student_id = req.body.student_id || req.headers.student_id;
     }
     const dir = path.join(
       DIR,
@@ -52,8 +53,9 @@ const submissionStorage = multer.diskStorage({
       `${assignment_id}`,
       `${student_id}`,
     );
-    fs.mkdirSync(dir, { recursive: true });
-    cb(null, dir);
+    let error = req.fileError || null;
+    if (error == null) fs.mkdirSync(dir, { recursive: true });
+    cb(error, dir);
   },
 
   filename: (req, file, cb) => {

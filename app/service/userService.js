@@ -1,7 +1,4 @@
-const {
-  createUserSchema,
-  createUserUpdateSchema,
-} = require("../validator/userValidator");
+const { userSchema, updateUserSchema } = require("../validator/userValidator");
 const bcrypt = require("bcrypt");
 const userModel = require("../model/userModel");
 const redis = require("../cache/redis");
@@ -9,7 +6,7 @@ async function createUser(user) {
   // Validate user
 
   // Schema Validation
-  const validatedUser = createUserSchema.parse(user);
+  const validatedUser = userSchema.parse(user);
 
   // Hash password
   const hashedPassword = await bcrypt.hash(user.password, 10);
@@ -50,7 +47,7 @@ async function deleteUserById(id) {
 async function updateUserById(id, user) {
   // Validate user
   // Schema Validation
-  const validatedUser = createUserUpdateSchema.parse(user);
+  const validatedUser = updateUserSchema.parse(user);
   let safeUser = {};
   const safeFields = [
     "first_name",

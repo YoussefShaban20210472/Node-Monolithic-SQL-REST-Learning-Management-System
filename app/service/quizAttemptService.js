@@ -1,7 +1,4 @@
-const {
-  createQuizAttemptSchema,
-} = require("../validator/quizAttemptValidator");
-const { createEnrollmentSchema } = require("../validator/enrollmentValidator");
+const { quizAttemptSchema } = require("../validator/quizAttemptValidator");
 const quizAttemptModel = require("../model/quizAttemptModel");
 const courseService = require("./courseService");
 const quizService = require("./quizService");
@@ -25,7 +22,7 @@ function calculateQuizAttemptScore(quizQuestions, answers) {
 }
 
 async function createQuizAttempt(course_id, quiz_id, body) {
-  const validatedQuizAttempt = createQuizAttemptSchema.parse(body);
+  const validatedQuizAttempt = quizAttemptSchema.parse(body);
   const quiz = await quizService.getQuizById(course_id, quiz_id);
 
   const score = calculateQuizAttemptScore(
@@ -41,8 +38,7 @@ async function createQuizAttempt(course_id, quiz_id, body) {
 }
 
 async function getQuizAttempt(course_id, quiz_id, body) {
-  const { student_id } = createEnrollmentSchema.parse(body);
-  const _ = await quizService.getQuizById(course_id, quiz_id);
+  const student_id = body.student_id;
   const quizAttempt = await quizAttemptModel.getQuizAttempt(
     quiz_id,
     student_id,
@@ -54,8 +50,6 @@ async function getQuizAttempt(course_id, quiz_id, body) {
 }
 
 async function getAllQuizAttempts(course_id, quiz_id) {
-  const _ = await quizService.getQuizById(course_id, quiz_id);
-
   const quizAttempts = await quizAttemptModel.getAllQuizAttempts(quiz_id);
   return quizAttempts;
 }

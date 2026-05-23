@@ -1,8 +1,7 @@
 const assignmentMediaFileModel = require("../model/assignmentMediaFileModel");
 const fs = require("fs/promises");
 const path = require("path");
-const { createMediaFileSchema } = require("../validator/mediaFileValidator");
-const assignmentService = require("./assignmentService");
+const { mediaFileSchema } = require("../validator/mediaFileValidator");
 const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 async function createAssignmentMediaFiles(course_id, assignment_id, files) {
   let filenames = [];
@@ -14,8 +13,6 @@ async function createAssignmentMediaFiles(course_id, assignment_id, files) {
   }
 
   try {
-    const _ = await assignmentService.getAssignment(course_id, assignment_id);
-
     await assignmentMediaFileModel.createAssignmentMediaFiles(
       assignment_id,
       filenames,
@@ -31,8 +28,7 @@ async function createAssignmentMediaFiles(course_id, assignment_id, files) {
   }
 }
 async function deleteAssignmentMediaFile(course_id, assignment_id, filename) {
-  const _ = await assignmentService.getAssignment(course_id, assignment_id);
-  const validateAssignmentMediaFile = createMediaFileSchema.parse({ filename });
+  const validateAssignmentMediaFile = mediaFileSchema.parse({ filename });
   const media_file = await assignmentMediaFileModel.deleteAssignmentMediaFile(
     assignment_id,
     filename,
@@ -48,8 +44,7 @@ async function deleteAssignmentMediaFile(course_id, assignment_id, filename) {
   return media_file;
 }
 async function getAssignmentMediaFile(course_id, assignment_id, filename) {
-  const _ = await assignmentService.getAssignment(course_id, assignment_id);
-  const validateAssignmentMediaFile = createMediaFileSchema.parse({ filename });
+  const validateAssignmentMediaFile = mediaFileSchema.parse({ filename });
   const media_file = await assignmentMediaFileModel.getAssignmentMediaFile(
     assignment_id,
     filename,
