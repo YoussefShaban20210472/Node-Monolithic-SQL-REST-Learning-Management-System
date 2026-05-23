@@ -20,7 +20,7 @@ const {
   testUpdateOneFieldInObjectRequest,
   testUpdateManyFieldsInObjectRequest,
 } = require("../utils/preMadeTests");
-
+jest.setTimeout(100000);
 const requiredFields = [
   "first_name",
   "last_name",

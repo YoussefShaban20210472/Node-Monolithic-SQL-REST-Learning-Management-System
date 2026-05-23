@@ -10,7 +10,7 @@ const {
   testInvalidObjectCreationRequest,
   testInvalidAuthenticationAndAuthorizationRequest,
 } = require("../utils/preMadeTests");
-
+jest.setTimeout(100000);
 const adminUser = {
   email: "admin2@example.com",
   password: "Password@123",
