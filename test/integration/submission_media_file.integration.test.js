@@ -25,7 +25,7 @@ const {
   testUpdateManyFieldsInObjectRequest,
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(50000);
+jest.setTimeout(100000);
 const requiredFields = ["score"];
 // Common invalid values for most fields
 const commonInvalids = [

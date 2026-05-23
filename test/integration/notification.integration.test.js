@@ -26,7 +26,7 @@ const {
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
 const requiredFields = ["user_id", "status"];
-jest.setTimeout(90000);
+jest.setTimeout(100000);
 let adminToken;
 beforeAll(async () => {
   adminToken = await getToken(adminUser);

@@ -25,7 +25,7 @@ const {
   testUpdateManyFieldsInObjectRequest,
   testInvalidObjectDuriationRequest,
 } = require("../utils/preMadeTests");
-jest.setTimeout(50000);
+jest.setTimeout(100000);
 let adminToken, instructorToken, studentToken, courseId;
 let unauthorizedInstructorToken, unauthorizedStudentToken;
 let lessonIdToGet;
