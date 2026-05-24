@@ -5,6 +5,7 @@ const {
 const { assertValidTimeAndDuration } = require("../validator/validator");
 const assignmentModel = require("../model/assignmentModel");
 const courseService = require("./courseService");
+const { ObjectNotFound, BadRequest } = require("../error/businessError");
 
 async function createAssignment(course_id, body) {
   const validatedAssignment = await assignmentSchema.parse(body);
@@ -23,7 +24,7 @@ async function deleteAssignment(course_id, assignment_id) {
     assignment_id,
   );
   if (assignment == null) {
-    throw { status: 404, message: "Assignment not found" };
+    throw new ObjectNotFound("Assignment");
   }
   return assignment;
 }
@@ -33,7 +34,7 @@ async function getAssignment(course_id, assignment_id) {
     assignment_id,
   );
   if (assignment == null) {
-    throw { status: 404, message: "Assignment not found" };
+    throw new ObjectNotFound("Assignment");
   }
   return assignment;
 }
@@ -62,11 +63,9 @@ async function updateAssignmentById(course_id, assignment_id, assignment) {
     }
   });
   if (Object.keys(safeAssignment).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the assignment",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the assignment",
+    );
   }
 
   const course = await courseService.getCourseById(course_id);
@@ -90,7 +89,7 @@ async function updateAssignmentById(course_id, assignment_id, assignment) {
     safeAssignment,
   );
   if (updatedAssignment == null) {
-    throw { status: 404, message: "Assignment Not Found" };
+    throw new ObjectNotFound("Assignment");
   }
 
   return updatedAssignment;

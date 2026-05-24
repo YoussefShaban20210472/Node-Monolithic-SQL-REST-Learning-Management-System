@@ -1,6 +1,8 @@
+const { AccessDeny } = require("../error/businessError");
+
 function authorizeAdminMiddleware(req, res, next) {
   if (req.user.role !== "admin") {
-    throw { status: 401, message: "Access denied" };
+    throw new AccessDeny();
   }
   next();
 }

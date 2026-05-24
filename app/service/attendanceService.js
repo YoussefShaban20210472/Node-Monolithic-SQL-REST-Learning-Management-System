@@ -7,6 +7,7 @@ const attendanceModel = require("../model/attendanceModel");
 const userService = require("./userService");
 const lessonService = require("./lessonService");
 const enrollmentService = require("./enrollmentService");
+const { ObjectNotFound, BadRequest } = require("../error/businessError");
 
 async function attend(course_id, lesson_id, body) {
   const validatedAttendance = attendanceSchema.parse(body);
@@ -15,7 +16,7 @@ async function attend(course_id, lesson_id, body) {
 
   const lesson = await lessonService.getLessonOTP(course_id, lesson_id);
   if (lesson.otp != otp) {
-    throw { status: 400, message: "Wrong OTP" };
+    throw new BadRequest("Wrong OTP");
   }
 
   let attendance = await attendanceModel.attend(lesson_id, student_id);
@@ -28,7 +29,7 @@ async function getAttendance(course_id, lesson_id, body) {
 
   let attendance = await attendanceModel.getAttendance(lesson_id, student_id);
   if (attendance == null) {
-    throw { status: 404, message: "Attendance is not found" };
+    throw new ObjectNotFound("Attendance");
   }
   return attendance;
 }

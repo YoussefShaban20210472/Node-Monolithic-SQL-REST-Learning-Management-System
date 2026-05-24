@@ -5,6 +5,7 @@ const {
   instructorIDSchema,
   studentIDSchema,
 } = require("../validator/userIDValidator");
+const { BadRequest } = require("../error/businessError");
 async function validateAndAuthorize(req) {
   const validatedBody = studentIDSchema.parse(req.body);
   const student_id = validatedBody.student_id;
@@ -27,7 +28,7 @@ async function validateAndAuthorize(req) {
   }
 
   if (error) {
-    throw { status: 400, message: "Student is not enrolled to the course" };
+    throw new BadRequest("Student is not enrolled to the course");
   }
 }
 async function validateAndAuthorizeStudentIDPassedByAdminMiddleware(

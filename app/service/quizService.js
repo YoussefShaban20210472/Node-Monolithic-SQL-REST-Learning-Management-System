@@ -3,6 +3,7 @@ const { assertValidTimeAndDuration } = require("../validator/validator");
 const quizModel = require("../model/quizModel");
 const questionBankModel = require("../model/questionBankModel");
 const courseService = require("./courseService");
+const { BadRequest, ObjectNotFound } = require("../error/businessError");
 
 async function assertQuestionExist(course_id, questions_ids) {
   for (let question_id of questions_ids) {
@@ -11,7 +12,7 @@ async function assertQuestionExist(course_id, questions_ids) {
       question_id,
     );
     if (question == null) {
-      throw { status: 404, message: "Question not found" };
+      throw new ObjectNotFound("Question");
     }
   }
 }
@@ -28,7 +29,7 @@ async function createQuiz(course_id, body) {
 async function deleteQuizById(course_id, quiz_id) {
   const quiz = await quizModel.deleteQuizById(course_id, quiz_id);
   if (quiz == null) {
-    throw { status: 404, message: "Quiz not found" };
+    throw new ObjectNotFound("Quiz");
   }
   return quiz;
 }
@@ -36,7 +37,7 @@ async function deleteQuizById(course_id, quiz_id) {
 async function getQuizById(course_id, quiz_id) {
   const quiz = await quizModel.getQuizById(course_id, quiz_id);
   if (quiz == null) {
-    throw { status: 404, message: "Quiz not found" };
+    throw new ObjectNotFound("Quiz");
   }
   return quiz;
 }
@@ -63,11 +64,9 @@ async function updateQuizById(course_id, quiz_id, quiz) {
     }
   });
   if (Object.keys(safeQuiz).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the quiz",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the quiz",
+    );
   }
 
   const course = await courseService.getCourseById(course_id);
@@ -89,7 +88,7 @@ async function updateQuizById(course_id, quiz_id, quiz) {
     validatedQuiz.question,
   );
   if (updatedQuiz == null) {
-    throw { status: 404, message: "Quiz Not Found" };
+    throw new ObjectNotFound("Quiz");
   }
 
   return updatedQuiz;

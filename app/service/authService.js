@@ -4,6 +4,7 @@ const userModel = require("../model/userModel");
 const redis = require("../cache/redis");
 const { generateToken, verfiyToken } = require("../jwt/JWT");
 const { JsonWebTokenError } = require("jsonwebtoken");
+const { ObjectNotFound, AccessDeny } = require("../error/businessError");
 
 async function authenticateUser(token) {
   try {
@@ -20,7 +21,7 @@ async function authenticateUser(token) {
     return decoded;
   } catch (error) {
     if (error instanceof JsonWebTokenError || error === "BLACKLIST")
-      throw { status: 401, message: "Access denied" };
+      throw new AccessDeny();
     throw error;
   }
 }
@@ -39,7 +40,7 @@ async function loginUser(user) {
   const isMatch = await bcrypt.compare(user.password, foundUser.password);
 
   if (!isMatch) {
-    throw { status: 404, message: "Accout Not Found" };
+    throw new ObjectNotFound("Account");
   }
   const userTokenVersion =
     (await redis.get(`user_${foundUser.id}_tokenVersion`)) || "0";

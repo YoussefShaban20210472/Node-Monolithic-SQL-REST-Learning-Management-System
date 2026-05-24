@@ -1,5 +1,6 @@
 const { questionBankSchema } = require("../validator/questionBankValidator");
 const questionBankModel = require("../model/questionBankModel");
+const { BadRequest, ObjectNotFound } = require("../error/businessError");
 
 async function createQuestionBank(course_id, body) {
   const validatedQuestionBank = await questionBankSchema.parse(body);
@@ -17,7 +18,7 @@ async function deleteQuestionBankById(course_id, question_id) {
     question_id,
   );
   if (questionBank == null) {
-    throw { status: 404, message: "question bank not found" };
+    throw new ObjectNotFound("Question Bank");
   }
   return questionBank;
 }
@@ -27,7 +28,7 @@ async function getQuestionBankById(course_id, question_id) {
     question_id,
   );
   if (questionBank == null) {
-    throw { status: 404, message: "question bank not found" };
+    throw new ObjectNotFound("Question Bank");
   }
   return questionBank;
 }
@@ -39,10 +40,7 @@ async function getAllQuestionsBank(course_id) {
 
 async function updateQuestionBankById(course_id, question_id, body) {
   if (body == null || Array.isArray(body) || typeof body != "object") {
-    throw {
-      status: 400,
-      message: "Body must be a JSON object",
-    };
+    throw new BadRequest("Body must be a JSON object");
   }
 
   let safeQuestionBank = {};
@@ -53,11 +51,9 @@ async function updateQuestionBankById(course_id, question_id, body) {
     }
   });
   if (Object.keys(safeQuestionBank).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the question",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the question",
+    );
   }
 
   const questionBank = await getQuestionBankById(course_id, question_id);

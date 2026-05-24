@@ -3,6 +3,7 @@ const {
   updateCourseSchema,
 } = require("../validator/courseValidator");
 const courseModel = require("../model/courseModel");
+const { BadRequest, ObjectNotFound } = require("../error/businessError");
 async function createCourse(body) {
   // Validate course
 
@@ -20,7 +21,7 @@ async function createCourse(body) {
 async function getCourseById(id) {
   const course = await courseModel.getCourseById(id);
   if (course == null) {
-    throw { status: 404, message: "Course Not Found" };
+    throw new ObjectNotFound("Course");
   }
   return course;
 }
@@ -28,7 +29,7 @@ async function getCourseById(id) {
 async function getFullCourseById(id) {
   const course = await courseModel.getFullCourseById(id);
   if (course == null) {
-    throw { status: 404, message: "Course Not Found" };
+    throw new ObjectNotFound("Course");
   }
   return course;
 }
@@ -61,11 +62,9 @@ async function updateCourseById(id, course) {
     }
   });
   if (Object.keys(safeCourse).length === 0 && tag == null && category == null) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the course",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the course",
+    );
   }
 
   const updatedCourse = await courseModel.updateCourseById(
@@ -75,14 +74,14 @@ async function updateCourseById(id, course) {
     category,
   );
   if (updatedCourse == null) {
-    throw { status: 404, message: "Course Not Found" };
+    throw new ObjectNotFound("Course");
   }
   return updatedCourse;
 }
 async function deleteCourseById(id) {
   const course = await courseModel.deleteCourseById(id);
   if (course == null) {
-    throw { status: 404, message: "Course Not Found" };
+    throw new ObjectNotFound("Course");
   }
   return course;
 }

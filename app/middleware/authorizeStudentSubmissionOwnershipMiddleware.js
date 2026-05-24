@@ -1,3 +1,4 @@
+const { AccessDeny } = require("../error/businessError");
 const submissionMediaFileService = require("../service/submissionMediaFileService");
 
 async function authorizeStudentSubmissionOwnershipMiddleware(req, res, next) {
@@ -10,8 +11,7 @@ async function authorizeStudentSubmissionOwnershipMiddleware(req, res, next) {
       assignment_id,
       submission_id,
     );
-    if (`${submission.student_id}` != `${req.user.id}`)
-      throw { status: 401, message: "Access denied" };
+    if (`${submission.student_id}` != `${req.user.id}`) throw new AccessDeny();
   }
   next();
 }

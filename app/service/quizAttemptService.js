@@ -2,6 +2,7 @@ const { quizAttemptSchema } = require("../validator/quizAttemptValidator");
 const quizAttemptModel = require("../model/quizAttemptModel");
 const courseService = require("./courseService");
 const quizService = require("./quizService");
+const { ObjectNotFound, BadRequest } = require("../error/businessError");
 
 function calculateQuizAttemptScore(quizQuestions, answers) {
   let score = 0;
@@ -44,7 +45,7 @@ async function getQuizAttempt(course_id, quiz_id, body) {
     student_id,
   );
   if (quizAttempt == null) {
-    throw { status: 404, message: "student didn't solve the quiz yet" };
+    throw new ObjectNotFound("Student Attempt");
   }
   return quizAttempt;
 }
@@ -71,11 +72,9 @@ async function updateQuizById(course_id, quiz_id, quiz) {
     }
   });
   if (Object.keys(safeQuiz).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the quiz",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the quiz",
+    );
   }
 
   const course = await courseService.getCourseById(course_id);
@@ -97,7 +96,7 @@ async function updateQuizById(course_id, quiz_id, quiz) {
     validatedQuiz.question,
   );
   if (updatedQuiz == null) {
-    throw { status: 404, message: "Quiz Not Found" };
+    throw new ObjectNotFound("Quiz");
   }
 
   return updatedQuiz;

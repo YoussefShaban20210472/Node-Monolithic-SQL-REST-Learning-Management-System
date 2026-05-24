@@ -6,6 +6,7 @@ const { assertValidTimeAndDuration } = require("../validator/validator");
 const lessonModel = require("../model/lessonModel");
 const courseService = require("./courseService");
 const generateOTP = require("../utils/otp");
+const { ObjectNotFound, BadRequest } = require("../error/businessError");
 
 async function createLesson(course_id, body) {
   const validatedLesson = await lessonSchema.parse(body);
@@ -19,21 +20,21 @@ async function createLesson(course_id, body) {
 async function deleteLesson(course_id, lesson_id) {
   const lesson = await lessonModel.deleteLesson(course_id, lesson_id);
   if (lesson == null) {
-    throw { status: 404, message: "Lesson not found" };
+    throw new ObjectNotFound("Lesson");
   }
   return lesson;
 }
 async function getLesson(course_id, lesson_id) {
   const lesson = await lessonModel.getLesson(course_id, lesson_id);
   if (lesson == null) {
-    throw { status: 404, message: "Lesson not found" };
+    throw new ObjectNotFound("Lesson");
   }
   return lesson;
 }
 async function getLessonOTP(course_id, lesson_id) {
   const lesson = await lessonModel.getLessonOTP(course_id, lesson_id);
   if (lesson == null) {
-    throw { status: 404, message: "Lesson not found" };
+    throw new ObjectNotFound("Lesson");
   }
   return lesson;
 }
@@ -55,11 +56,9 @@ async function updateLessonById(course_id, lesson_id, lesson) {
     }
   });
   if (Object.keys(safeLesson).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the lesson",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the lesson",
+    );
   }
 
   const course = await courseService.getCourseById(course_id);
@@ -80,7 +79,7 @@ async function updateLessonById(course_id, lesson_id, lesson) {
     safeLesson,
   );
   if (updatedLesson == null) {
-    throw { status: 404, message: "Lesson Not Found" };
+    throw new ObjectNotFound("Lesson");
   }
 
   return updatedLesson;

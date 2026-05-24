@@ -1,3 +1,4 @@
+const { BadRequest, ObjectNotFound } = require("../error/businessError");
 const submissionMediaFileModel = require("../model/submissionMediaFileModel");
 const { mediaFileSchema } = require("../validator/mediaFileValidator");
 const { submissionScoreSchema } = require("../validator/submissionValidator");
@@ -13,7 +14,7 @@ async function createSubmissionMediaFiles(
 ) {
   let filenames = [];
   if (!files || files.length === 0) {
-    throw { status: 400, message: "No files uploaded" };
+    throw new BadRequest("No files uploaded");
   }
   for (let file of files) {
     filenames.push(file.originalname);
@@ -43,7 +44,7 @@ async function getSubmission(course_id, assignment_id, submission_id) {
     submission_id,
   );
   if (submission == null) {
-    throw { status: 404, message: "Submission not found" };
+    throw new ObjectNotFound("Submission");
   }
   return submission;
 }
@@ -89,7 +90,7 @@ async function getSubmissionMediaFile(
     filename,
   );
   if (media_file == null) {
-    throw { status: 404, message: "Media File not found" };
+    throw new ObjectNotFound("Media File");
   }
   const dir = path.join(
     DIR,
@@ -102,7 +103,7 @@ async function getSubmissionMediaFile(
   try {
     await fs.access(filePath);
   } catch {
-    throw { status: 404, message: "Media File not found" };
+    throw new ObjectNotFound("Submission");
   }
   return filePath;
 }
@@ -121,7 +122,7 @@ async function updateSubmissionScore(
     score,
   );
   if (submission == null) {
-    throw { status: 404, message: "Submission not found" };
+    throw new ObjectNotFound("Submission");
   }
   return submission;
 }

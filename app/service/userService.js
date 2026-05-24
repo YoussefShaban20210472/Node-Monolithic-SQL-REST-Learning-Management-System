@@ -2,6 +2,7 @@ const { userSchema, updateUserSchema } = require("../validator/userValidator");
 const bcrypt = require("bcrypt");
 const userModel = require("../model/userModel");
 const redis = require("../cache/redis");
+const { BadRequest, ObjectNotFound } = require("../error/businessError");
 async function createUser(user) {
   // Validate user
 
@@ -26,7 +27,7 @@ async function getAllUsers() {
 async function findUserById(id) {
   const user = await userModel.findUserById(id);
   if (user == null) {
-    throw { status: 404, message: "Accout Not Found" };
+    throw new ObjectNotFound("Account");
   }
   return user;
 }
@@ -34,7 +35,7 @@ async function findUserById(id) {
 async function deleteUserById(id) {
   const user = await userModel.deleteUserById(id);
   if (user == null) {
-    throw { status: 404, message: "Accout Not Found" };
+    throw new ObjectNotFound("Account");
   }
   const userTokenVersion = (await redis.get(`user_${id}_tokenVersion`)) || "0";
   await redis.set(
@@ -62,15 +63,13 @@ async function updateUserById(id, user) {
     }
   });
   if (Object.keys(safeUser).length === 0) {
-    throw {
-      status: 400,
-      message:
-        "You have to provide at least one allowed field to update the profile",
-    };
+    throw new BadRequest(
+      "You have to provide at least one allowed field to update the profile",
+    );
   }
   const updatedUser = await userModel.updateUserById(id, safeUser);
   if (updatedUser == null) {
-    throw { status: 404, message: "Accout Not Found" };
+    throw new ObjectNotFound("Account");
   }
   if (validatedUser["email"] != null) {
     const userTokenVersion =
@@ -86,7 +85,7 @@ async function updateUserById(id, user) {
 async function assertValidUserId(role, id) {
   const user = await findUserById(id);
   if (user.role != role) {
-    throw { status: 400, message: `${role}_id must be id of ${role}` };
+    throw new BadRequest(`${role}_id must be id of ${role}`);
   }
 }
 

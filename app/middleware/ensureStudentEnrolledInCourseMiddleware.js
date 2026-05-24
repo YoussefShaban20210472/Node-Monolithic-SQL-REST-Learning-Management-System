@@ -1,3 +1,4 @@
+const { AccessDeny } = require("../error/businessError");
 const courseService = require("../service/courseService");
 const enrollmentService = require("../service/enrollmentService");
 
@@ -21,7 +22,7 @@ async function ensureStudentEnrolledInCourseMiddleware(req, res, next) {
     }
 
     if (error) {
-      throw { status: 401, message: "Access denied" };
+      throw new AccessDeny();
     }
   }
   next();

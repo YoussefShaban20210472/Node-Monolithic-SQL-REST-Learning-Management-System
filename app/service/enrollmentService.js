@@ -1,6 +1,7 @@
 const { updateEnrollmentSchema } = require("../validator/enrollmentValidator");
 const enrollmentModel = require("../model/enrollmentModel");
 const userService = require("./userService");
+const { ObjectNotFound, Confilct } = require("../error/businessError");
 
 async function enroll(course_id, body) {
   const student_id = body.student_id;
@@ -13,9 +14,9 @@ async function unEnroll(course_id, body) {
 
   let enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
   if (enrollment == null) {
-    throw { status: 404, message: "Enrollment Not Found" };
+    throw new ObjectNotFound("Enrollment");
   } else if (enrollment.status == "rejected") {
-    throw { status: 409, message: "Can't delete rejected enrollments" };
+    throw new Confilct("Can't delete rejected enrollments");
   }
   enrollment = await enrollmentModel.unEnroll(course_id, student_id);
   return enrollment;
@@ -28,7 +29,7 @@ async function updateEnrollment(body, course_id) {
   enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
 
   if (enrollment == null) {
-    throw { status: 404, message: "Enrollment Not Found" };
+    throw new ObjectNotFound("Enrollment");
   }
   enrollment = await enrollmentModel.updateEnrollment(
     status,
@@ -43,7 +44,7 @@ async function getEnrollment(body, course_id) {
 
   let enrollment = await enrollmentModel.getEnrollment(course_id, student_id);
   if (enrollment == null) {
-    throw { status: 404, message: "Enrollment Not Found" };
+    throw new ObjectNotFound("Enrollment");
   }
   return enrollment;
 }

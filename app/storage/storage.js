@@ -1,6 +1,7 @@
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const { BadRequest } = require("../error/businessError");
 const DIR = path.join(__dirname, "..", "..", "storage", "uploads", "courses");
 const courseStorage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -70,7 +71,7 @@ const fileFilter = (req, file, cb) => {
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb({ status: 400, message: "Invalid file type" }, false);
+    cb(new BadRequest("Invalid file type"), false);
   }
 };
 

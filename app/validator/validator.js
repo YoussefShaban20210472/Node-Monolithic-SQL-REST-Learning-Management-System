@@ -1,4 +1,5 @@
 const { z } = require(`zod`);
+const { BadRequest } = require("../error/businessError");
 
 const HALF_HOUR = 1000 * 60 * 30;
 const ONE_DAY = 1000 * 60 * 60 * 24;
@@ -165,7 +166,7 @@ function assertValidTimeAndDuration(course, object, objectName) {
     message = `${objectName} end date must end before course end date`;
   }
   if (message) {
-    throw { status: 400, message };
+    throw new BadRequest(message);
   }
 }
 module.exports = {
